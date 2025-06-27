@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "548610123577",
+    "project_id": "appcafe-d90db",
+    "storage_bucket": "appcafe-d90db.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:548610123577:android:f47a93e81ddc9da06baae8",
+        "android_client_info": {
+          "package_name": "com.example.appcafe"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBhsgz_O0-dsVWG-NMs83yAK9f505ZpMh0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
