@@ -8,6 +8,8 @@ enum class RutasNav {
     Perfil,
     //rutas admin
     AgregarProduct,
-    AgregarDelivery
-
+    AgregarDelivery,
+    PedidosPreparar,
+    //rutas repartidores
+    VerYAceptarPedidos
 }

@@ -3,11 +3,13 @@ package com.upsjb.sesion07.navegacion
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.outlined.List
 import androidx.compose.material.icons.outlined.Add
+import androidx.compose.material.icons.outlined.DeliveryDining
 import androidx.compose.material.icons.outlined.Favorite
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.ImageAspectRatio
 import androidx.compose.material.icons.outlined.List
 import androidx.compose.material.icons.outlined.PersonOutline
+import androidx.compose.material.icons.outlined.Restaurant
 import androidx.compose.material.icons.outlined.ShoppingCart
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
@@ -41,6 +43,15 @@ sealed class  PantallasNav(val titulo:String,
     )
     object ItemAgregarDelivery:PantallasNav(RutasNav.AgregarDelivery.name,
         RutasNav.AgregarDelivery.name,Icons.Outlined.Add,
+        Color(0xFF6F4E37)
+    )
+    object ItemPedidosPreparar:PantallasNav(RutasNav.PedidosPreparar.name,
+        RutasNav.PedidosPreparar.name,Icons.Outlined.Restaurant,
+        Color(0xFF6F4E37)
+    )
+    //pantalla repartidores
+    object ItemVerYAceptarPedidos:PantallasNav(RutasNav.VerYAceptarPedidos.name,
+        RutasNav.VerYAceptarPedidos.name,Icons.Outlined.DeliveryDining,
         Color(0xFF6F4E37)
     )
 }

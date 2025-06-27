@@ -1,22 +1,20 @@
 package com.example.appcafe
 
+import SplashUI
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.Surface
+import androidx.compose.foundation.layout.*
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Modifier
-import androidx.navigation.compose.NavHost
-import androidx.navigation.compose.composable
-import androidx.navigation.compose.rememberNavController
+import androidx.navigation.compose.*
+import com.example.appcafe.db.Usuario
 import com.example.appcafe.ui.theme.AppCafeTheme
-import com.example.appcafe.vistaUI.LoginUI
-import com.example.appcafe.vistaUI.RegistroUI
-import com.example.appcafe.vistaUI.MainAppScreen
+import com.example.appcafe.vistaUI.*
 import com.example.cafeteria.db.AuthService
 import dagger.hilt.android.AndroidEntryPoint
-
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -31,41 +29,53 @@ class MainActivity : ComponentActivity() {
                     color = MaterialTheme.colorScheme.background
                 ) {
                     val navController = rememberNavController()
-
-                    // Determinar pantalla inicial según estado de autenticación
-                    val startDestination = if (authService.estaLogueado()) {
-                        "main_app" // Cambié a main_app que contiene tu ManejadorNav
-                    } else {
-                        "login"
-                    }
+                    var usuarioActual by remember { mutableStateOf<Usuario?>(null) }
+                    val scope = rememberCoroutineScope()
 
                     NavHost(
                         navController = navController,
-                        startDestination = startDestination
+                        startDestination = "splash"
                     ) {
-                        composable("login") {
-                            LoginUI(navController = navController)
+                        composable("splash") {
+                            SplashUI { usuario ->
+                                usuarioActual = usuario
+                                navController.navigate(if (usuario != null) "main_app" else "login") {
+                                    popUpTo("splash") { inclusive = true }
+                                }
+                            }
                         }
 
-                        composable("main_app") {
-                            // Aquí usamos tu ManejadorNav
-                            val esAdmin = authService.esAdmin()
-
-                            MainAppScreen(
-                                esAdmin = esAdmin,
-                                onLogout = {
-                                    authService.cerrarSesion()
-                                    navController.navigate("login") {
-                                        popUpTo(0) { inclusive = true }
+                        composable("login") {
+                            LoginUI(
+                                navController = navController,
+                                onLoginSuccess = {
+                                    scope.launch {
+                                        usuarioActual = authService.obtenerUsuarioActual()
+                                        navController.navigate("main_app") {
+                                            popUpTo("login") { inclusive = true }
+                                        }
                                     }
                                 }
                             )
                         }
 
-
-
                         composable("registro") {
                             RegistroUI(navController = navController)
+                        }
+
+                        composable("main_app") {
+                            usuarioActual?.let { usuario ->
+                                MainAppScreen(
+                                    usuario = usuario,
+                                    onLogout = {
+                                        authService.cerrarSesion()
+                                        usuarioActual = null
+                                        navController.navigate("login") {
+                                            popUpTo(0) { inclusive = true }
+                                        }
+                                    }
+                                )
+                            }
                         }
                     }
                 }

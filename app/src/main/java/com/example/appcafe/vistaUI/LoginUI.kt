@@ -24,7 +24,10 @@ import kotlinx.coroutines.launch
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-fun LoginUI(navController: NavController) {
+fun LoginUI(
+    navController: NavController,
+    onLoginSuccess: () -> Unit
+) {
     var correo by remember { mutableStateOf("") }
     var contraseña by remember { mutableStateOf("") }
     var isLoading by remember { mutableStateOf(false) }
@@ -39,8 +42,7 @@ fun LoginUI(navController: NavController) {
             .background(Color.Black)
     ) {
         Column(modifier = Modifier.fillMaxSize()) {
-
-            // Imagen sin padding lateral
+            // Imagen superior
             Box(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -71,7 +73,7 @@ fun LoginUI(navController: NavController) {
                 }
             }
 
-            // Formulario con padding horizontal
+            // Formulario
             Column(
                 modifier = Modifier
                     .fillMaxSize()
@@ -80,32 +82,18 @@ fun LoginUI(navController: NavController) {
             ) {
                 Spacer(modifier = Modifier.height(40.dp))
 
-                Text(
-                    text = "Correo:",
-                    fontSize = 14.sp,
-                    color = Color(0xFF6F4E37),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp),
-                    textAlign = TextAlign.Start
-                )
-
+                Text("Correo:", fontSize = 14.sp, color = Color(0xFF6F4E37), modifier = Modifier.fillMaxWidth(), textAlign = TextAlign.Start)
                 OutlinedTextField(
                     value = correo,
                     onValueChange = { correo = it },
-                    placeholder = {
-                        Text("Ingresar usuario...", color = Color(0xFF6F4E37), fontSize = 14.sp)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(),
-                    shape = RoundedCornerShape(25.dp), // <- esta es la clave
+                    placeholder = { Text("Ingresar usuario...", color = Color(0xFF6F4E37), fontSize = 14.sp) },
+                    modifier = Modifier.fillMaxWidth(),
+                    shape = RoundedCornerShape(25.dp),
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFD2691E),
                         unfocusedBorderColor = Color(0xFF444444),
                         focusedTextColor = Color(0xFF6F4E37),
                         unfocusedTextColor = Color(0xFF6F4E37),
-                        focusedPlaceholderColor = Color(0xFF666666),
-                        unfocusedPlaceholderColor = Color(0xFF666666),
                         focusedContainerColor = Color(0xFFF0EAD6),
                         unfocusedContainerColor = Color(0xFFF0EAD6),
                         cursorColor = Color.White
@@ -114,39 +102,28 @@ fun LoginUI(navController: NavController) {
                     singleLine = true
                 )
 
-                Text(
-                    text = "Contraseña:",
-                    fontSize = 14.sp,
-                    color = Color(0xFF6F4E37),
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(bottom = 8.dp, top = 16.dp),
-                    textAlign = TextAlign.Start
-                )
+                Text("Contraseña:", fontSize = 14.sp, color = Color(0xFF6F4E37), modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(vertical = 8.dp), textAlign = TextAlign.Start)
 
                 OutlinedTextField(
                     value = contraseña,
                     onValueChange = { contraseña = it },
-                    placeholder = {
-                        Text("Ingresar contraseña...", color = Color(0xFF6F4E37), fontSize = 14.sp)
-                    },
-                    modifier = Modifier
-                        .fillMaxWidth(),
+                    placeholder = { Text("Ingresar contraseña...", color = Color(0xFF6F4E37), fontSize = 14.sp) },
+                    modifier = Modifier.fillMaxWidth(),
                     shape = RoundedCornerShape(25.dp),
+                    visualTransformation = PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    singleLine = true,
                     colors = OutlinedTextFieldDefaults.colors(
                         focusedBorderColor = Color(0xFFD2691E),
                         unfocusedBorderColor = Color(0xFF444444),
                         focusedTextColor = Color(0xFF6F4E37),
                         unfocusedTextColor = Color(0xFF6F4E37),
-                        focusedPlaceholderColor = Color(0xFF666666),
-                        unfocusedPlaceholderColor = Color(0xFF666666),
                         focusedContainerColor = Color(0xFFF0EAD6),
                         unfocusedContainerColor = Color(0xFFF0EAD6),
                         cursorColor = Color.White
-                    ),
-                    visualTransformation = PasswordVisualTransformation(),
-                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
-                    singleLine = true
+                    )
                 )
 
                 if (errorMessage.isNotEmpty()) {
@@ -165,9 +142,7 @@ fun LoginUI(navController: NavController) {
                                 val result = authService.iniciarSesion(correo, contraseña)
                                 isLoading = false
                                 if (result.isSuccess) {
-                                    navController.navigate("main_app") {
-                                        popUpTo("login") { inclusive = true }
-                                    }
+                                    onLoginSuccess()
                                 } else {
                                     errorMessage = result.exceptionOrNull()?.message
                                         ?: "Error al iniciar sesión"
@@ -181,23 +156,13 @@ fun LoginUI(navController: NavController) {
                         .width(132.dp)
                         .height(39.dp)
                         .clip(RoundedCornerShape(25.dp)),
-                    colors = ButtonDefaults.buttonColors(
-                        containerColor = Color(0xFFD68C45)
-                    ),
+                    colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD68C45)),
                     enabled = !isLoading
                 ) {
                     if (isLoading) {
-                        CircularProgressIndicator(
-                            color = Color.White,
-                            modifier = Modifier.size(20.dp)
-                        )
+                        CircularProgressIndicator(color = Color.White, modifier = Modifier.size(20.dp))
                     } else {
-                        Text(
-                            text = "Iniciar Sesion",
-                            fontSize = 15.sp,
-                            fontWeight = FontWeight.Bold,
-                            color = Color.White
-                        )
+                        Text("Iniciar Sesión", fontSize = 15.sp, fontWeight = FontWeight.Bold, color = Color.White)
                     }
                 }
 
@@ -207,24 +172,11 @@ fun LoginUI(navController: NavController) {
                     modifier = Modifier.padding(bottom = 40.dp),
                     verticalAlignment = Alignment.CenterVertically
                 ) {
-                    Text(
-                        text = "NO TIENES CUENTA AUN? ",
-                        color = Color(0xFF888888),
-                        fontSize = 12.sp
-                    )
-                    TextButton(
-                        onClick = { navController.navigate("registro") },
-                        contentPadding = PaddingValues(0.dp)
-                    ) {
-                        Text(
-                            text = "REGISTRATE AQUI",
-                            color = Color(0xFFD2691E),
-                            fontSize = 12.sp,
-                            fontWeight = FontWeight.Bold
-                        )
+                    Text("NO TIENES CUENTA AÚN? ", color = Color(0xFF888888), fontSize = 12.sp)
+                    TextButton(onClick = { navController.navigate("registro") }) {
+                        Text("REGÍSTRATE AQUÍ", color = Color(0xFFD2691E), fontSize = 12.sp, fontWeight = FontWeight.Bold)
                     }
                 }
-
             }
         }
     }

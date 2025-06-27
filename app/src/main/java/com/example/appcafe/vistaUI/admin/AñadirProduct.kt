@@ -2,7 +2,9 @@ package com.example.appcafe.vistaUI.admin
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -67,6 +69,7 @@ fun AgregarProductoUI(
         modifier = Modifier
             .fillMaxSize()
             .background(Color(0xFFF5F5DC)) // Color beige similar a la imagen
+            .verticalScroll(rememberScrollState()) // Agregar scroll vertical
             .padding(16.dp)
     ) {
         // Título
@@ -348,18 +351,26 @@ fun AgregarProductoUI(
                     )
                 }
 
-                // Tamaños disponibles
+                // Tamaños disponibles - MEJORADO
                 Text(
-                    text = "Tamaños disponibles",
+                    text = "Tamaños disponibles:",
                     style = MaterialTheme.typography.bodyLarge,
                     color = Color.Black,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                // Indicador de selección múltiple
+                Text(
+                    text = "Selecciona uno o más tamaños (${tamañosSeleccionados.size} seleccionados)",
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color(0xFF666666),
                     modifier = Modifier.padding(bottom = 12.dp)
                 )
 
                 Row(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .padding(bottom = 24.dp),
+                        .padding(bottom = 16.dp),
                     horizontalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
                     tamañosDisponibles.forEach { tamaño ->
@@ -376,7 +387,7 @@ fun AgregarProductoUI(
                             },
                             enabled = !isLoading,
                             colors = ButtonDefaults.buttonColors(
-                                containerColor = if (isSelected) Color(0xFF8B4513) else Color(0xFFD2B48C),
+                                containerColor = if (isSelected) Color(0xFF8B4513) else Color(0xFFE8E8E0),
                                 contentColor = if (isSelected) Color.White else Color.Black
                             ),
                             modifier = Modifier.weight(1f)
@@ -386,6 +397,23 @@ fun AgregarProductoUI(
                                 style = MaterialTheme.typography.bodyMedium
                             )
                         }
+                    }
+                }
+
+                // Mostrar tamaños seleccionados
+                if (tamañosSeleccionados.isNotEmpty()) {
+                    Card(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 16.dp),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E8))
+                    ) {
+                        Text(
+                            text = "Tamaños seleccionados: ${tamañosSeleccionados.joinToString(", ")}",
+                            style = MaterialTheme.typography.bodySmall,
+                            color = Color(0xFF2E7D32),
+                            modifier = Modifier.padding(12.dp)
+                        )
                     }
                 }
 
@@ -411,11 +439,12 @@ fun AgregarProductoUI(
 
                     Button(
                         onClick = {
-                            // Validar campos
+                            // Validar campos obligatorios
                             if (nombre.isNotBlank() &&
                                 descripcionCorta.isNotBlank() &&
                                 precio.isNotBlank() &&
-                                categoriaSeleccionada.isNotBlank()) {
+                                categoriaSeleccionada.isNotBlank() &&
+                                tamañosSeleccionados.isNotEmpty()) { // Validar que al menos un tamaño esté seleccionado
 
                                 val producto = Producto(
                                     id = "", // Firebase generará el ID
@@ -431,8 +460,17 @@ fun AgregarProductoUI(
 
                                 viewModel.agregarProducto(producto)
                             } else {
-                                // Mostrar error de validación
-                                viewModel.limpiarEstados()
+                                // Mostrar error de validación específico
+                                val camposFaltantes = mutableListOf<String>()
+                                if (nombre.isBlank()) camposFaltantes.add("Nombre")
+                                if (descripcionCorta.isBlank()) camposFaltantes.add("Descripción corta")
+                                if (precio.isBlank()) camposFaltantes.add("Precio")
+                                if (categoriaSeleccionada.isBlank()) camposFaltantes.add("Categoría")
+                                if (tamañosSeleccionados.isEmpty()) camposFaltantes.add("Al menos un tamaño")
+
+                                // Aquí podrías mostrar un mensaje de error específico
+                                // Por ejemplo, usando el ViewModel para mostrar el error
+                                viewModel.mostrarError("Campos obligatorios faltantes: ${camposFaltantes.joinToString(", ")}")
                             }
                         },
                         enabled = !isLoading,
@@ -444,7 +482,8 @@ fun AgregarProductoUI(
                     ) {
                         if (isLoading) {
                             Row(
-                                horizontalArrangement = Arrangement.spacedBy(8.dp)
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                verticalAlignment = Alignment.CenterVertically
                             ) {
                                 CircularProgressIndicator(
                                     modifier = Modifier.size(16.dp),

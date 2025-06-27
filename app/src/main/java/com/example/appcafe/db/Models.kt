@@ -10,7 +10,21 @@ data class Usuario(
     val direcciones: List<Direccion> = emptyList(),
     val favoritos: List<Favorito> = emptyList(),
     val telefono: String = "",
-    val esAdmin: Boolean = false
+    val esAdmin: Boolean = false,
+
+    val fotoUrl: String = ""
+)
+
+//repartidor
+data class Repartidor(
+    val id: String = "",
+    val nombre: String = "",
+    val apellidos: String = "",
+    val telefono: String = "",
+    val fotoUrl: String = "",
+    val disponible: Boolean = true,
+    val calificacion: Double = 5.0,
+    val pedidosEntregados: Int = 0
 )
 
 //modelo de direccion de usuario
@@ -20,6 +34,7 @@ data class Direccion(
     val descripcion: String = "",
     val esPrincipal: Boolean = false,
     val icono: String = ""
+
 )
 
 //modelo de producto
@@ -34,6 +49,7 @@ data class Producto(
     val imagenUrl: String = "",
     val disponible: Boolean = true
 )
+
 //modelo de favoritos de usuario
 data class Favorito(
     val id: String = "",
@@ -82,7 +98,13 @@ data class Orden(
     val estado: EstadoOrden = EstadoOrden.PENDIENTE,
     val fechaCreacion: Long = System.currentTimeMillis(),
     val fechaEntregaEstimada: Long = 0L,
-    val notas: String = ""
+    val notas: String = "",
+    // Nuevos campos para repartidor
+    val repartidorId: String = "",
+    val repartidorNombre: String = "",
+    val repartidorTelefono: String = "",
+    val repartidorFoto: String = "",
+    val fechaAsignacionRepartidor: Long = 0L
 )
 
 // Estados de la orden

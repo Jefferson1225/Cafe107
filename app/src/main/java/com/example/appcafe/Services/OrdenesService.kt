@@ -2,6 +2,7 @@ package com.example.appcafe.Services
 
 import com.example.appcafe.db.EstadoOrden
 import com.example.appcafe.db.Orden
+import com.example.appcafe.db.Repartidor
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -21,6 +22,8 @@ class OrdenesService @Inject constructor(
 
     private val userId get() = auth.currentUser?.uid ?: ""
     private val orderCollection = firestore.collection("ordenes")
+    private val repartidorCollection = firestore.collection("repartidores")
+    private val usuarioCollection = firestore.collection("usuarios")
 
     suspend fun crearOrden(orden: Orden): String {
         val orderId = UUID.randomUUID().toString()
@@ -50,12 +53,110 @@ class OrdenesService @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    // Pedidos para cocina, priorizando PENDIENTE -> CONFIRMADO -> EN_PREPARACION
+    fun getPedidosParaCocina(): Flow<List<Orden>> = callbackFlow {
+        val listener = orderCollection
+            .whereIn("estado", listOf(
+                EstadoOrden.PENDIENTE.name,
+                EstadoOrden.CONFIRMADO.name,
+                EstadoOrden.EN_PREPARACION.name
+            ))
+            .orderBy("fechaCreacion", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val ordenes = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Orden::class.java)?.copy(
+                        estado = EstadoOrden.valueOf(doc.getString("estado") ?: "PENDIENTE")
+                    )
+                }?.sortedWith(compareBy({ estadoOrdenPrioridad(it.estado) }, { it.fechaCreacion })) ?: emptyList()
+
+                trySend(ordenes)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    private fun estadoOrdenPrioridad(estado: EstadoOrden): Int {
+        return when (estado) {
+            EstadoOrden.PENDIENTE -> 0
+            EstadoOrden.CONFIRMADO -> 1
+            EstadoOrden.EN_PREPARACION -> 2
+            else -> 3
+        }
+    }
+
+    fun getPedidosParaRepartidor(): Flow<List<Orden>> = callbackFlow {
+        val listener = orderCollection
+            .whereIn("estado", listOf(EstadoOrden.EN_PREPARACION.name, EstadoOrden.EN_CAMINO.name))
+            .orderBy("fechaCreacion", Query.Direction.ASCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val ordenes = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Orden::class.java)?.copy(
+                        estado = EstadoOrden.valueOf(doc.getString("estado") ?: "PENDIENTE")
+                    )
+                } ?: emptyList()
+
+                trySend(ordenes)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
     suspend fun getOrdenById(orderId: String): Orden? {
         val snapshot = orderCollection.document(orderId).get().await()
-        return snapshot.toObject(Orden::class.java)
+        return snapshot.toObject(Orden::class.java)?.copy(
+            estado = EstadoOrden.valueOf(snapshot.getString("estado") ?: "PENDIENTE")
+        )
     }
 
     suspend fun actualizarEstadoOrden(orderId: String, status: EstadoOrden) {
-        orderCollection.document(orderId).update("estado", status).await()
+        orderCollection.document(orderId).update("estado", status.name).await()
+    }
+
+    suspend fun asignarRepartidor(orderId: String, repartidorId: String) {
+        val repartidorDoc = usuarioCollection.document(repartidorId).get().await()
+        val repartidor = repartidorDoc.toObject(com.example.appcafe.db.Usuario::class.java)
+
+        if (repartidor != null) {
+            val updates = mapOf(
+                "repartidorId" to repartidorId,
+                "repartidorNombre" to "${repartidor.nombre} ${repartidor.apellidos}",
+                "repartidorTelefono" to repartidor.telefono,
+                "repartidorFoto" to repartidor.fotoUrl,
+                "fechaAsignacionRepartidor" to System.currentTimeMillis()
+            )
+
+            orderCollection.document(orderId).update(updates).await()
+        }
+    }
+
+    suspend fun getOrdenConCliente(orderId: String): Pair<Orden?, com.example.appcafe.db.Usuario?> {
+        val orden = getOrdenById(orderId)
+        var cliente: com.example.appcafe.db.Usuario? = null
+
+        if (orden != null) {
+            val clienteDoc = usuarioCollection.document(orden.usuarioId).get().await()
+            cliente = clienteDoc.toObject(com.example.appcafe.db.Usuario::class.java)
+        }
+
+        return Pair(orden, cliente)
+    }
+
+    suspend fun getRepartidoresDisponibles(): List<com.example.appcafe.db.Usuario> {
+        val snapshot = usuarioCollection
+            .whereEqualTo("esRepartidor", true)
+            .get()
+            .await()
+
+        return snapshot.toObjects(com.example.appcafe.db.Usuario::class.java)
     }
 }

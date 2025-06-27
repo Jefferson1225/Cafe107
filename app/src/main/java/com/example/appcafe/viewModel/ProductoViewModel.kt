@@ -28,6 +28,9 @@ class ProductoViewModel : ViewModel() {
     private val _operacionExitosa = MutableStateFlow(false)
     val operacionExitosa: StateFlow<Boolean> = _operacionExitosa.asStateFlow()
 
+    private val _validationError = MutableStateFlow<String?>(null)
+    val validationError: StateFlow<String?> = _validationError
+
     /**
      * Agregar un nuevo producto a Firebase
      */
@@ -255,5 +258,9 @@ class ProductoViewModel : ViewModel() {
                 _isLoading.value = false
             }
         }
+    }
+
+    fun mostrarError(mensaje: String) {
+        _validationError.value = mensaje
     }
 }

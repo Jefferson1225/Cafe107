@@ -7,7 +7,13 @@ import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material.icons.filled.Cancel
+import androidx.compose.material.icons.filled.CheckCircle
+import androidx.compose.material.icons.filled.DeliveryDining
+import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.LocationOn
+import androidx.compose.material.icons.filled.Phone
+import androidx.compose.material.icons.filled.Restaurant
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -166,6 +172,13 @@ fun DetallePedidoContent(pedido: Orden) {
             ItemsPedidoSection(items = pedido.items)
         }
 
+        // Información del repartidor (solo si está asignado)
+        if (pedido.repartidorId.isNotEmpty()) {
+            item {
+                RepartidorSection(pedido = pedido)
+            }
+        }
+
         // Dirección de entrega
         item {
             DireccionEntregaSection(direccion = pedido.direccionEntrega)
@@ -182,6 +195,131 @@ fun DetallePedidoContent(pedido: Orden) {
         }
     }
 }
+
+
+//repartidor section
+@Composable
+fun RepartidorSection(pedido: Orden) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(containerColor = Color.White),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        shape = RoundedCornerShape(12.dp)
+    ) {
+        Column(
+            modifier = Modifier.padding(16.dp)
+        ) {
+            Text(
+                text = "Tu Repartidor",
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color(0xFF5D4037),
+                modifier = Modifier.padding(bottom = 12.dp)
+            )
+
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                // Avatar del repartidor
+                Box(
+                    modifier = Modifier
+                        .size(60.dp)
+                        .background(
+                            color = Color(0xFF4CAF50),
+                            shape = RoundedCornerShape(30.dp)
+                        ),
+                    contentAlignment = Alignment.Center
+                ) {
+                    if (pedido.repartidorFoto.isNotEmpty()) {
+                        // Aquí podrías cargar la imagen real con Coil o similar
+                        // AsyncImage(model = pedido.repartidorFoto, ...)
+                        Text(
+                            text = pedido.repartidorNombre.firstOrNull()?.toString() ?: "R",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    } else {
+                        Text(
+                            text = pedido.repartidorNombre.firstOrNull()?.toString() ?: "R",
+                            fontSize = 24.sp,
+                            fontWeight = FontWeight.Bold,
+                            color = Color.White
+                        )
+                    }
+                }
+
+                Spacer(modifier = Modifier.width(16.dp))
+
+                Column(
+                    modifier = Modifier.weight(1f)
+                ) {
+                    Text(
+                        text = pedido.repartidorNombre,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF5D4037)
+                    )
+
+                    Text(
+                        text = "Repartidor asignado",
+                        fontSize = 12.sp,
+                        color = Color(0xFF8D6E63)
+                    )
+
+                    if (pedido.estado == EstadoOrden.EN_CAMINO) {
+                        Row(
+                            verticalAlignment = Alignment.CenterVertically,
+                            modifier = Modifier.padding(top = 4.dp)
+                        ) {
+                            Box(
+                                modifier = Modifier
+                                    .size(8.dp)
+                                    .background(
+                                        color = Color(0xFF4CAF50),
+                                        shape = RoundedCornerShape(4.dp)
+                                    )
+                            )
+                            Spacer(modifier = Modifier.width(6.dp))
+                            Text(
+                                text = "En camino hacia ti",
+                                fontSize = 12.sp,
+                                color = Color(0xFF4CAF50),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                // Botón para llamar al repartidor
+                if (pedido.repartidorTelefono.isNotEmpty() && pedido.estado == EstadoOrden.EN_CAMINO) {
+                    OutlinedButton(
+                        onClick = {
+                            // Aquí implementar la llamada
+                            // val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:${pedido.repartidorTelefono}"))
+                            // context.startActivity(intent)
+                        },
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF4CAF50)
+                        ),
+                        shape = RoundedCornerShape(20.dp),
+                        modifier = Modifier.size(40.dp),
+                        contentPadding = PaddingValues(0.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Phone,
+                            contentDescription = "Llamar repartidor",
+                            modifier = Modifier.size(20.dp)
+                        )
+                    }
+                }
+            }
+        }
+    }
+}
+
+
 
 @Composable
 fun ItemsPedidoSection(items: List<ItemCarrito>) {
@@ -343,12 +481,11 @@ fun ResumenPagoSection(pedido: Orden) {
 @Composable
 fun ProgressoPedido(estado: EstadoOrden) {
     Column {
-        // Barra de progreso
         val progress = when (estado) {
-            EstadoOrden.PENDIENTE -> 0.25f
-            EstadoOrden.CONFIRMADO -> 0.5f
-            EstadoOrden.EN_PREPARACION -> 0.75f
-            EstadoOrden.EN_CAMINO -> 0.9f
+            EstadoOrden.PENDIENTE -> 0f  // Cambiado de 0.2f a 0f
+            EstadoOrden.CONFIRMADO -> 0.25f  // Ajustado para que comience aquí
+            EstadoOrden.EN_PREPARACION -> 0.5f
+            EstadoOrden.EN_CAMINO -> 0.75f
             EstadoOrden.ENTREGADO -> 1f
             EstadoOrden.CANCELADO -> 0f
         }
@@ -371,30 +508,88 @@ fun ProgressoPedido(estado: EstadoOrden) {
                 trackColor = Color(0xFFE0E0E0)
             )
 
-            Spacer(modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(12.dp))
 
-            // Estados
+            // Estados mejorados
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween
             ) {
-                Text(
-                    text = "Preparando",
-                    fontSize = 12.sp,
-                    color = if (progress >= 0.5f) Color(0xFF4CAF50) else Color(0xFF8D6E63)
+                EstadoItem(
+                    texto = "Confirmado",
+                    activo = progress >= 0.25f,  // Ajustado para que se active con CONFIRMADO
+                    icono = Icons.Default.CheckCircle
                 )
-                Text(
-                    text = "En camino",
-                    fontSize = 12.sp,
-                    color = if (progress >= 0.9f) Color(0xFF4CAF50) else Color(0xFF8D6E63)
+                EstadoItem(
+                    texto = "Preparando",
+                    activo = progress >= 0.5f,
+                    icono = Icons.Default.Restaurant
                 )
-                Text(
-                    text = "Entregado",
-                    fontSize = 12.sp,
-                    color = if (progress >= 1f) Color(0xFF4CAF50) else Color(0xFF8D6E63)
+                EstadoItem(
+                    texto = "En camino",
+                    activo = progress >= 0.75f,
+                    icono = Icons.Default.DeliveryDining
+                )
+                EstadoItem(
+                    texto = "Entregado",
+                    activo = progress >= 1f,
+                    icono = Icons.Default.Home
                 )
             }
+        } else {
+            // Estado cancelado
+            Card(
+                modifier = Modifier.fillMaxWidth(),
+                colors = CardDefaults.cardColors(containerColor = Color(0xFFFFEBEE)),
+                shape = RoundedCornerShape(8.dp)
+            ) {
+                Row(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(12.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Cancel,
+                        contentDescription = null,
+                        tint = Color(0xFFF44336),
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Pedido cancelado",
+                        fontSize = 14.sp,
+                        color = Color(0xFFF44336),
+                        fontWeight = FontWeight.Medium
+                    )
+                }
+            }
         }
+    }
+}
+
+@Composable
+fun EstadoItem(
+    texto: String,
+    activo: Boolean,
+    icono: androidx.compose.ui.graphics.vector.ImageVector
+) {
+    Column(
+        horizontalAlignment = Alignment.CenterHorizontally
+    ) {
+        Icon(
+            imageVector = icono,
+            contentDescription = null,
+            tint = if (activo) Color(0xFF4CAF50) else Color(0xFF8D6E63),
+            modifier = Modifier.size(16.dp)
+        )
+        Spacer(modifier = Modifier.height(4.dp))
+        Text(
+            text = texto,
+            fontSize = 10.sp,
+            color = if (activo) Color(0xFF4CAF50) else Color(0xFF8D6E63),
+            fontWeight = if (activo) FontWeight.Medium else FontWeight.Normal
+        )
     }
 }
 
@@ -480,3 +675,5 @@ fun formatearFecha(timestamp: Long): String {
     val formatter = SimpleDateFormat("dd/MM/yyyy HH:mm", Locale.getDefault())
     return formatter.format(date)
 }
+
+
