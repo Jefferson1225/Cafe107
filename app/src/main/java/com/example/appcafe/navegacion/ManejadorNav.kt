@@ -21,6 +21,7 @@ import androidx.navigation.NavHostController
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import com.example.appcafe.Services.FavoritosService
+import com.example.appcafe.SubsUI.DetallePedidosUI
 import com.example.appcafe.db.Usuario
 import com.example.appcafe.vistaUI.InicioUI
 import com.example.appcafe.vistaUI.PedidosUI
@@ -64,6 +65,9 @@ fun ManejadorNav(
                         userId = usuarioActual.id,
                         onNavigateBack = {
                             navControlador.popBackStack()
+                        },
+                        onNavigateToDetalle = { pedidoId ->
+                            navControlador.navigate("detalle_pedido/$pedidoId")
                         }
                     )
                 } else {
@@ -92,6 +96,21 @@ fun ManejadorNav(
                 val userId = backStackEntry.arguments?.getString("userId") ?: ""
                 PedidosUI(
                     userId = userId,
+                    onNavigateBack = {
+                        navControlador.popBackStack()
+                    },
+                    onNavigateToDetalle = { pedidoId ->
+                        navControlador.navigate("detalle_pedido/$pedidoId")
+                    }
+                )
+            }
+
+            // Nueva ruta para el detalle del pedido
+            composable("detalle_pedido/{pedidoId}") { backStackEntry ->
+                val pedidoId = backStackEntry.arguments?.getString("pedidoId") ?: ""
+
+                DetallePedidosUI(
+                    pedidoId = pedidoId,
                     onNavigateBack = {
                         navControlador.popBackStack()
                     }
