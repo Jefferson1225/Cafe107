@@ -100,10 +100,10 @@ fun MisEntregasUI(
                                 colors = CardDefaults.cardColors(containerColor = Color.White)
                             ) {
                                 Column(modifier = Modifier.padding(12.dp)) {
-                                    Text("Cliente: ${orden.usuarioNombre}", style = MaterialTheme.typography.titleSmall,color = Color(0xFF6F4837))
+                                    Text("Cliente: ${orden.usuarioNombre} ${orden.usuarioApellidos}", style = MaterialTheme.typography.titleSmall,color = Color(0xFF6F4837))
                                     Text("Estado: ${orden.estado}", color = Color(0xFF6F4837))
                                     Text("Hora: ${formatoHora.format(orden.fechaCreacion)}",color = Color(0xFF6F4837))
-
+                                    Text("Precio: S/${orden.total}",color = Color(0xFF6F4837))
                                     orden.items.forEach {
                                         Text("- ${it.nombre} x${it.cantidad}",color = Color(0xFF6F4837))
                                     }

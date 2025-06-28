@@ -87,6 +87,8 @@ fun HistorialOrdenesUI(onNavigateBack: () -> Unit){
                                 Text("Cliente: ${orden.usuarioNombre} ${orden.usuarioApellidos}", style = MaterialTheme.typography.titleSmall,color = Color(0xFF6F4837))
                                 Text("Estado: ${orden.estado}", color = Color(0xFF6F4837))
                                 Text("Fecha: ${fechaFormato.format(orden.fechaCreacion)}",color = Color(0xFF6F4837))
+                                Text("Precio: S/${orden.total}",color = Color(0xFF6F4837))
+                                Text("Repartidor: ${orden.repartidorNombre}",color = Color(0xFF6F4837))
                                 orden.items.forEach {
                                     Text("- ${it.nombre} x${it.cantidad}",color = Color(0xFF6F4837))
                                 }
