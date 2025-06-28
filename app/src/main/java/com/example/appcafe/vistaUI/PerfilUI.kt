@@ -25,7 +25,9 @@ fun PerfilUI(
     tipoUsuario: TipoUsuario,
     onLogout: () -> Unit,
     onClickDirecciones: () -> Unit,
-    onClickFavoritos: () -> Unit
+    onClickFavoritos: () -> Unit,
+    onClickHistorialOrdenes: () -> Unit,
+    onClickMisEntregas: () -> Unit
 ) {
     val CafeOscuro = Color(0xFF3E2C1C)
     val MarronIcono = Color(0xFF6F4837)
@@ -231,6 +233,60 @@ fun PerfilUI(
                             )
                         }
                     }
+                }
+            }
+        }
+
+        if (tipoUsuario == TipoUsuario.ADMIN) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable { onClickHistorialOrdenes() },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(
+                    modifier = Modifier.padding(16.dp),
+                    verticalAlignment = Alignment.CenterVertically
+                ) {
+                    Icon(Icons.Default.History, contentDescription = null, tint = MarronIcono)
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Historial de órdenes",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = CafeOscuro
+                    )
+                }
+            }
+        }
+
+        if (tipoUsuario == TipoUsuario.REPARTIDOR) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp)
+                    .clickable { onClickMisEntregas() },
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(16.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.LocalShipping,
+                        contentDescription = null,
+                        tint = Color(0xFF6F4837)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
+                    Text(
+                        text = "Mis entregas",
+                        style = MaterialTheme.typography.bodyLarge,
+                        color = Color(0xFF3E2C1C)
+                    )
                 }
             }
         }

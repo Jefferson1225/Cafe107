@@ -207,5 +207,22 @@ class OrdenesService @Inject constructor(
         awaitClose { listener.remove() }
     }
 
+    fun obtenerTodasLasOrdenes(
+        onSuccess: (List<Orden>) -> Unit,
+        onError: () -> Unit
+    ) {
+        firestore.collection("ordenes")
+            .get()
+            .addOnSuccessListener { result ->
+                val ordenes = result.documents.mapNotNull { doc ->
+                    doc.toObject(Orden::class.java)?.copy(id = doc.id)
+                }
+                onSuccess(ordenes)
+            }
+            .addOnFailureListener {
+                onError()
+            }
+    }
+
 
 }

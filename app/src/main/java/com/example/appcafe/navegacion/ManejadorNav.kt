@@ -29,6 +29,8 @@ import com.example.appcafe.vistaUI.PerfilUI
 import com.example.appcafe.SubsUI.ProductoDetalleUI
 import com.example.appcafe.SubsUI.DireccionesUI
 import com.example.appcafe.SubsUI.FavoritosUI
+import com.example.appcafe.SubsUI.HistorialOrdenesUI
+import com.example.appcafe.SubsUI.MisEntregasUI
 import com.example.appcafe.vistaUI.admin.AgregarProductoUI
 import com.example.appcafe.vistaUI.admin.AgregarRepartidorUI
 import com.example.appcafe.vistaUI.admin.PedidosPreparar
@@ -128,12 +130,23 @@ fun ManejadorNav(
                     onNavigateBack = { navControlador.popBackStack() }
                 )
             }
+            composable("historial_ordenes") {
+                HistorialOrdenesUI(
+                    onNavigateBack = { navControlador.popBackStack() }
+                )
+            }
         }
 
         // RUTAS PARA REPARTIDOR
         if (tipoUsuario == TipoUsuario.REPARTIDOR) {
             composable(PantallasNav.ItemVerYAceptarPedidos.ruta) {
                 VerYAceptarPedidosUI(
+                    repartidorId = usuario.id,
+                    onNavigateBack = { navControlador.popBackStack() }
+                )
+            }
+            composable("mis_entregas") {
+                MisEntregasUI(
                     repartidorId = usuario.id,
                     onNavigateBack = { navControlador.popBackStack() }
                 )
@@ -154,6 +167,12 @@ fun ManejadorNav(
                 },
                 onClickFavoritos = {
                     navControlador.navigate("favoritos")
+                },
+                onClickHistorialOrdenes = {
+                    navControlador.navigate("historial_ordenes")
+                },
+                onClickMisEntregas = {
+                    navControlador.navigate("mis_entregas")
                 }
             )
         }
