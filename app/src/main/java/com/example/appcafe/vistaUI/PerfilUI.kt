@@ -15,11 +15,14 @@ import androidx.compose.ui.unit.dp
 import com.example.appcafe.db.Usuario
 import com.example.appcafe.Services.FavoritosService
 import com.example.appcafe.db.Favorito
+import com.example.cafeteria.db.AuthService
+import com.example.cafeteria.db.TipoUsuario
 import com.example.cafeteria.db.actualizarTelefono
 
 @Composable
 fun PerfilUI(
     usuario: Usuario,
+    tipoUsuario: TipoUsuario,
     onLogout: () -> Unit,
     onClickDirecciones: () -> Unit,
     onClickFavoritos: () -> Unit
@@ -32,6 +35,7 @@ fun PerfilUI(
 
     val favoritosService = remember { FavoritosService() }
     var favoritos by remember { mutableStateOf<List<Favorito>>(emptyList()) }
+
 
     // Obtener favoritos al cargar
     LaunchedEffect(usuario.id) {
@@ -164,71 +168,73 @@ fun PerfilUI(
             }
         }
 
-        // Direcciones y favoritos
-        Card(
-            modifier = Modifier
-                .fillMaxWidth()
-                .padding(horizontal = 16.dp, vertical = 4.dp),
-            shape = RoundedCornerShape(12.dp),
-            colors = CardDefaults.cardColors(containerColor = Color.White),
-            elevation = CardDefaults.cardElevation(4.dp)
-        ) {
-            Column {
-                // Mis Direcciones
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onClickDirecciones() }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(Icons.Default.LocationOn, contentDescription = null, tint = MarronIcono)
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "Mis direcciones",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = CafeOscuro
-                        )
-                        Text(
-                            text = "${usuario.direcciones.size} direcciones guardadas",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = CafeOscuro.copy(alpha = 0.6f)
-                        )
+        if (tipoUsuario == TipoUsuario.CLIENTE) {
+            Card(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                shape = RoundedCornerShape(12.dp),
+                colors = CardDefaults.cardColors(containerColor = Color.White),
+                elevation = CardDefaults.cardElevation(4.dp)
+            ) {
+                Column {
+                    // Mis Direcciones
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onClickDirecciones() }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(Icons.Default.LocationOn, contentDescription = null, tint = MarronIcono)
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Mis direcciones",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = CafeOscuro
+                            )
+                            Text(
+                                text = "${usuario.direcciones.size} direcciones guardadas",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = CafeOscuro.copy(alpha = 0.6f)
+                            )
+                        }
                     }
-                }
 
-                Divider(color = Color.LightGray, thickness = 1.dp)
+                    Divider(color = Color.LightGray, thickness = 1.dp)
 
-                // Favoritos
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .clickable { onClickFavoritos() }
-                        .padding(16.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    Icon(
-                        Icons.Default.FavoriteBorder,
-                        contentDescription = null,
-                        tint = MarronIcono
-                    )
-                    Spacer(modifier = Modifier.width(8.dp))
-                    Column {
-                        Text(
-                            text = "Mis favoritos",
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = CafeOscuro
+                    // Favoritos
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .clickable { onClickFavoritos() }
+                            .padding(16.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            Icons.Default.FavoriteBorder,
+                            contentDescription = null,
+                            tint = MarronIcono
                         )
-                        Text(
-                            text = "${favoritos.size} productos favoritos",
-                            style = MaterialTheme.typography.bodySmall,
-                            color = CafeOscuro.copy(alpha = 0.6f)
-                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Mis favoritos",
+                                style = MaterialTheme.typography.bodyLarge,
+                                color = CafeOscuro
+                            )
+                            Text(
+                                text = "${favoritos.size} productos favoritos",
+                                style = MaterialTheme.typography.bodySmall,
+                                color = CafeOscuro.copy(alpha = 0.6f)
+                            )
+                        }
                     }
                 }
             }
         }
+
 
         // Cerrar sesión
         Card(

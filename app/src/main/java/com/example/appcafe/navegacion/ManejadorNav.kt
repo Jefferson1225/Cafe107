@@ -144,6 +144,7 @@ fun ManejadorNav(
         composable(PantallasNav.ItemPerfil.ruta) {
             PerfilUI(
                 usuario = usuario,
+                tipoUsuario = tipoUsuario,
                 onLogout = {
                     authService.cerrarSesion()
                     onLogout()
