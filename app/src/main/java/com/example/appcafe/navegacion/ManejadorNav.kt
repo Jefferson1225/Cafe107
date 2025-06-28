@@ -35,9 +35,7 @@ import com.example.appcafe.vistaUI.admin.PedidosPreparar
 import com.example.appcafe.vistaUI.repartidores.VerYAceptarPedidosUI
 import com.example.appcare.vistaUI.CarritoUI
 import com.example.cafeteria.db.AuthService
-import com.google.firebase.Firebase
-import com.google.firebase.firestore.firestore
-import kotlinx.coroutines.tasks.await
+import com.example.cafeteria.db.TipoUsuario
 import java.net.URLDecoder
 import java.nio.charset.StandardCharsets
 
@@ -48,26 +46,16 @@ fun ManejadorNav(
     usuario: Usuario
 ) {
     val authService = remember { AuthService() }
-    val firestore = Firebase.firestore
 
-    val rolUsuarioState = produceState(initialValue = Triple<Usuario?, Boolean, Boolean>(null, false, false)) {
-        val usuarioActual = authService.obtenerUsuarioActual()
-        if (usuarioActual != null) {
-            val repartidorSnap = firestore.collection("repartidores")
-                .document(usuarioActual.id)
-                .get()
-                .await()
-
-            val esRepartidor = repartidorSnap.exists()
-            val esAdmin = usuarioActual.esAdmin
-            value = Triple(usuarioActual, esAdmin, esRepartidor)
-        }
+    // ACTUALIZADO: Usar el método del AuthService para obtener el tipo de usuario
+    val tipoUsuarioState = produceState(initialValue = TipoUsuario.NO_AUTENTICADO) {
+        value = authService.obtenerTipoUsuario()
     }
 
-    val (usuario, esAdmin, esRepartidor) = rolUsuarioState.value
-    val esUsuarioNormal = usuario != null && !esAdmin && !esRepartidor
+    val tipoUsuario = tipoUsuarioState.value
 
-    if (usuario == null) {
+    // Verificar si el usuario está autenticado
+    if (tipoUsuario == TipoUsuario.NO_AUTENTICADO) {
         MostrarCargando("Cargando usuario...")
         return
     }
@@ -76,13 +64,13 @@ fun ManejadorNav(
         navController = navControlador,
         startDestination = PantallasNav.ItemInicio.ruta
     ) {
-        // Pantalla de Inicio - Común
+        // Pantalla de Inicio - Común para todos los tipos de usuario
         composable(PantallasNav.ItemInicio.ruta) {
             InicioUI(navControlador)
         }
 
-        // USUARIO NORMAL
-        if (esUsuarioNormal) {
+        // RUTAS PARA CLIENTE (usuario normal)
+        if (tipoUsuario == TipoUsuario.CLIENTE) {
             composable(PantallasNav.ItemPedidos.ruta) {
                 PedidosUI(
                     userId = usuario.id,
@@ -125,8 +113,8 @@ fun ManejadorNav(
             }
         }
 
-        // ADMIN
-        if (esAdmin) {
+        // RUTAS PARA ADMIN
+        if (tipoUsuario == TipoUsuario.ADMIN) {
             composable(PantallasNav.ItemAgregarProducto.ruta) {
                 AgregarProductoUI()
             }
@@ -142,8 +130,8 @@ fun ManejadorNav(
             }
         }
 
-        // REPARTIDOR
-        if (esRepartidor) {
+        // RUTAS PARA REPARTIDOR
+        if (tipoUsuario == TipoUsuario.REPARTIDOR) {
             composable(PantallasNav.ItemVerYAceptarPedidos.ruta) {
                 VerYAceptarPedidosUI(
                     repartidorId = usuario.id,
@@ -152,7 +140,7 @@ fun ManejadorNav(
             }
         }
 
-        // PERFIL
+        // PERFIL - Común para todos los tipos de usuario autenticados
         composable(PantallasNav.ItemPerfil.ruta) {
             PerfilUI(
                 usuario = usuario,
@@ -169,49 +157,53 @@ fun ManejadorNav(
             )
         }
 
-        // FAVORITOS
-        composable("favoritos") {
-            val favoritosService = remember { FavoritosService() }
-            var recargarKey by remember { mutableStateOf(0) }
+        // FAVORITOS - Solo para clientes
+        if (tipoUsuario == TipoUsuario.CLIENTE) {
+            composable("favoritos") {
+                val favoritosService = remember { FavoritosService() }
+                var recargarKey by remember { mutableStateOf(0) }
 
-            val favoritosState = produceState(
-                initialValue = emptyList(),
-                key1 = recargarKey,
-                key2 = usuario.id
-            ) {
-                favoritosService.obtenerFavoritos(
+                val favoritosState = produceState(
+                    initialValue = emptyList(),
+                    key1 = recargarKey,
+                    key2 = usuario.id
+                ) {
+                    favoritosService.obtenerFavoritos(
+                        userId = usuario.id,
+                        onSuccess = { favoritos -> value = favoritos },
+                        onError = { value = emptyList() }
+                    )
+                }
+
+                FavoritosUI(
+                    favoritos = favoritosState.value,
                     userId = usuario.id,
-                    onSuccess = { favoritos -> value = favoritos },
-                    onError = { value = emptyList() }
+                    onBack = { navControlador.popBackStack() },
+                    onFavoritoEliminado = { recargarKey++ },
+                    onProductoClick = { productoId ->
+                        navControlador.navigate("producto_detalle/$productoId")
+                    }
                 )
             }
-
-            FavoritosUI(
-                favoritos = favoritosState.value,
-                userId = usuario.id,
-                onBack = { navControlador.popBackStack() },
-                onFavoritoEliminado = { recargarKey++ },
-                onProductoClick = { productoId ->
-                    navControlador.navigate("producto_detalle/$productoId")
-                }
-            )
         }
 
-        // DIRECCIONES
-        composable("direcciones") {
-            var recargarKey by remember { mutableStateOf(0) }
-            DireccionesUI(
-                direcciones = usuario.direcciones,
-                userId = usuario.id,
-                onAgregarDireccion = {},
-                onEditarDireccion = { println("Editar: ${it.descripcion}") },
-                onEliminarDireccion = {},
-                onBack = { navControlador.popBackStack() },
-                onDireccionAgregada = { recargarKey++ }
-            )
+        // DIRECCIONES - Solo para clientes
+        if (tipoUsuario == TipoUsuario.CLIENTE) {
+            composable("direcciones") {
+                var recargarKey by remember { mutableStateOf(0) }
+                DireccionesUI(
+                    direcciones = usuario.direcciones,
+                    userId = usuario.id,
+                    onAgregarDireccion = {},
+                    onEditarDireccion = { println("Editar: ${it.descripcion}") },
+                    onEliminarDireccion = {},
+                    onBack = { navControlador.popBackStack() },
+                    onDireccionAgregada = { recargarKey++ }
+                )
+            }
         }
 
-        // DETALLE PRODUCTO
+        // DETALLE PRODUCTO - Común, pero el comportamiento varía según el tipo de usuario
         composable("producto_detalle/{productoId}") { backStackEntry ->
             val productoId = URLDecoder.decode(
                 backStackEntry.arguments?.getString("productoId") ?: "",
@@ -221,7 +213,7 @@ fun ManejadorNav(
             ProductoDetalleUI(
                 navController = navControlador,
                 productoId = productoId,
-                esAdmin = esAdmin
+                esAdmin = tipoUsuario == TipoUsuario.ADMIN
             )
         }
     }

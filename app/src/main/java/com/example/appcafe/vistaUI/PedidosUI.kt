@@ -278,6 +278,7 @@ fun EstadoBadgeSimple(estado: EstadoOrden) {
         EstadoOrden.PENDIENTE -> Color(0xFFFF9800) to "Pendiente"
         EstadoOrden.CONFIRMADO -> Color(0xFF2196F3) to "Activo"
         EstadoOrden.EN_PREPARACION -> Color(0xFFFF5722) to "Activo"
+        EstadoOrden.ESPERANDO_REPARTIDOR -> Color(0xFF2196F3) to "Activo"
         EstadoOrden.EN_CAMINO -> Color(0xFF9C27B0) to "Activo"
         EstadoOrden.ENTREGADO -> Color(0xFF4CAF50) to "Entregado"
         EstadoOrden.CANCELADO -> Color(0xFFF44336) to "Cancelado"

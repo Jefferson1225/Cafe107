@@ -11,7 +11,7 @@ data class Usuario(
     val favoritos: List<Favorito> = emptyList(),
     val telefono: String = "",
     val esAdmin: Boolean = false,
-
+    val esRepartidor: Boolean = false,
     val fotoUrl: String = ""
 )
 
@@ -20,6 +20,8 @@ data class Repartidor(
     val id: String = "",
     val nombre: String = "",
     val apellidos: String = "",
+    val correo: String = "",
+    val contraseña: String = "",
     val telefono: String = "",
     val fotoUrl: String = "",
     val disponible: Boolean = true,
@@ -98,7 +100,13 @@ data class Orden(
     val fechaCreacion: Long = System.currentTimeMillis(),
     val fechaEntregaEstimada: Long = 0L,
     val notas: String = "",
-    // Nuevos campos para repartidor
+
+    // Información del usuario (cliente)
+    val usuarioNombre: String = "",
+    val usuarioApellidos: String = "",
+    val usuarioTelefono: String = "",
+
+    // Información del repartidor
     val repartidorId: String = "",
     val repartidorNombre: String = "",
     val repartidorTelefono: String = "",
@@ -111,6 +119,7 @@ enum class EstadoOrden {
     PENDIENTE,
     CONFIRMADO,
     EN_PREPARACION,
+    ESPERANDO_REPARTIDOR,
     EN_CAMINO,
     ENTREGADO,
     CANCELADO

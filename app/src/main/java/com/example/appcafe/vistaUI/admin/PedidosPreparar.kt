@@ -219,7 +219,7 @@ fun PedidoCocinaCard(
                         )
                         Spacer(modifier = Modifier.width(8.dp))
                         Text(
-                            text = "Listo para Entrega",
+                            text = "Listo para Preparar",
                             fontSize = 14.sp,
                             fontWeight = FontWeight.Medium
                         )
@@ -302,6 +302,7 @@ fun EstadoBadge(estado: EstadoOrden) {
         EstadoOrden.PENDIENTE -> Triple(Color(0xFFFF9800), "Pendiente", Icons.Default.Schedule)
         EstadoOrden.CONFIRMADO -> Triple(Color(0xFF2196F3), "Confirmado", Icons.Default.CheckCircle)
         EstadoOrden.EN_PREPARACION -> Triple(Color(0xFFFF5722), "Preparando", Icons.Default.Restaurant)
+        EstadoOrden.ESPERANDO_REPARTIDOR -> Triple(Color(0xFF2196F3),"Esperando Repa", Icons.Default.AddTask)
         EstadoOrden.EN_CAMINO -> Triple(Color(0xFF9C27B0), "En Camino", Icons.Default.DeliveryDining)
         EstadoOrden.ENTREGADO -> Triple(Color(0xFF4CAF50), "Entregado", Icons.Default.Done)
         EstadoOrden.CANCELADO -> Triple(Color(0xFFF44336), "Cancelado", Icons.Default.Cancel)

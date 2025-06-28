@@ -5,12 +5,17 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.Visibility
+import androidx.compose.material.icons.filled.VisibilityOff
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.input.KeyboardType
+import androidx.compose.ui.text.input.PasswordVisualTransformation
+import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -27,9 +32,19 @@ fun AgregarRepartidorUI(
     // Estados del formulario
     var nombre by remember { mutableStateOf("") }
     var apellidos by remember { mutableStateOf("") }
+    var correo by remember { mutableStateOf("") }
+    var contraseña by remember { mutableStateOf("") }
+    var confirmarContraseña by remember { mutableStateOf("") }
     var telefono by remember { mutableStateOf("") }
     var fotoUrl by remember { mutableStateOf("") }
     var disponible by remember { mutableStateOf(true) }
+
+    // Estados para mostrar/ocultar contraseñas
+    var mostrarContraseña by remember { mutableStateOf(false) }
+    var mostrarConfirmarContraseña by remember { mutableStateOf(false) }
+
+    // Estado para mostrar alerta de éxito
+    var mostrarAlertaExito by remember { mutableStateOf(false) }
 
     // Estados del ViewModel
     val repartidorState by viewModel.pedidosState.collectAsState()
@@ -40,18 +55,8 @@ fun AgregarRepartidorUI(
     // LaunchedEffect para manejar operación exitosa
     LaunchedEffect(operacionExitosa) {
         if (operacionExitosa) {
-            // Limpiar formulario
-            nombre = ""
-            apellidos = ""
-            telefono = ""
-            fotoUrl = ""
-            disponible = true
-
-            // Limpiar estados del ViewModel
-            viewModel.limpiarEstados()
-
-            // Navegar de vuelta
-            onRepartidorGuardado()
+            // Mostrar alerta de éxito
+            mostrarAlertaExito = true
         }
     }
 
@@ -150,6 +155,117 @@ fun AgregarRepartidorUI(
                         unfocusedTextColor = Color(0xFF5D2F0C)
                     )
                 )
+
+                // Correo electrónico
+                Text(
+                    text = "Correo electrónico:",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Black,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                OutlinedTextField(
+                    value = correo,
+                    onValueChange = { correo = it },
+                    placeholder = { Text("ejemplo@correo.com") },
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color(0xFFE8E8E0),
+                        focusedContainerColor = Color(0xFFE8E8E0),
+                        focusedBorderColor = Color(0xFF8B4513),
+                        unfocusedBorderColor = Color(0xFFBDBDBD),
+                        focusedTextColor = Color(0xFF5D2F0C),
+                        unfocusedTextColor = Color(0xFF5D2F0C)
+                    )
+                )
+
+                // Contraseña
+                Text(
+                    text = "Contraseña:",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Black,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                OutlinedTextField(
+                    value = contraseña,
+                    onValueChange = { contraseña = it },
+                    placeholder = { Text("Mínimo 6 caracteres") },
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    visualTransformation = if (mostrarContraseña) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { mostrarContraseña = !mostrarContraseña }) {
+                            Icon(
+                                imageVector = if (mostrarContraseña) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (mostrarContraseña) "Ocultar contraseña" else "Mostrar contraseña"
+                            )
+                        }
+                    },
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color(0xFFE8E8E0),
+                        focusedContainerColor = Color(0xFFE8E8E0),
+                        focusedBorderColor = Color(0xFF8B4513),
+                        unfocusedBorderColor = Color(0xFFBDBDBD),
+                        focusedTextColor = Color(0xFF5D2F0C),
+                        unfocusedTextColor = Color(0xFF5D2F0C)
+                    )
+                )
+
+                // Confirmar contraseña
+                Text(
+                    text = "Confirmar contraseña:",
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = Color.Black,
+                    modifier = Modifier.padding(bottom = 8.dp)
+                )
+
+                OutlinedTextField(
+                    value = confirmarContraseña,
+                    onValueChange = { confirmarContraseña = it },
+                    placeholder = { Text("Repetir contraseña") },
+                    enabled = !isLoading,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .padding(bottom = 16.dp),
+                    visualTransformation = if (mostrarConfirmarContraseña) VisualTransformation.None else PasswordVisualTransformation(),
+                    keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
+                    trailingIcon = {
+                        IconButton(onClick = { mostrarConfirmarContraseña = !mostrarConfirmarContraseña }) {
+                            Icon(
+                                imageVector = if (mostrarConfirmarContraseña) Icons.Default.Visibility else Icons.Default.VisibilityOff,
+                                contentDescription = if (mostrarConfirmarContraseña) "Ocultar contraseña" else "Mostrar contraseña"
+                            )
+                        }
+                    },
+                    isError = confirmarContraseña.isNotEmpty() && contraseña != confirmarContraseña,
+                    colors = OutlinedTextFieldDefaults.colors(
+                        unfocusedContainerColor = Color(0xFFE8E8E0),
+                        focusedContainerColor = Color(0xFFE8E8E0),
+                        focusedBorderColor = Color(0xFF8B4513),
+                        unfocusedBorderColor = Color(0xFFBDBDBD),
+                        focusedTextColor = Color(0xFF5D2F0C),
+                        unfocusedTextColor = Color(0xFF5D2F0C),
+                        errorBorderColor = Color.Red
+                    )
+                )
+
+                // Mensaje de error para contraseñas diferentes
+                if (confirmarContraseña.isNotEmpty() && contraseña != confirmarContraseña) {
+                    Text(
+                        text = "Las contraseñas no coinciden",
+                        color = Color.Red,
+                        style = MaterialTheme.typography.bodySmall,
+                        modifier = Modifier.padding(bottom = 16.dp, start = 16.dp)
+                    )
+                }
 
                 // Teléfono
                 Text(
@@ -270,32 +386,47 @@ fun AgregarRepartidorUI(
                     Button(
                         onClick = {
                             // Validar campos obligatorios
-                            if (nombre.isNotBlank() &&
-                                apellidos.isNotBlank() &&
-                                telefono.isNotBlank()) {
+                            val camposFaltantes = mutableListOf<String>()
+                            if (nombre.isBlank()) camposFaltantes.add("Nombre")
+                            if (apellidos.isBlank()) camposFaltantes.add("Apellidos")
+                            if (correo.isBlank()) camposFaltantes.add("Correo")
+                            if (contraseña.isBlank()) camposFaltantes.add("Contraseña")
+                            if (telefono.isBlank()) camposFaltantes.add("Teléfono")
 
-                                val repartidor = Repartidor(
-                                    id = "", // Firebase generará el ID
-                                    nombre = nombre.trim(),
-                                    apellidos = apellidos.trim(),
-                                    telefono = telefono.trim(),
-                                    fotoUrl = fotoUrl.trim().ifEmpty { "" },
-                                    disponible = disponible,
-                                    calificacion = 5.0, // Calificación inicial
-                                    pedidosEntregados = 0 // Pedidos entregados inicial
-                                )
+                            // Validaciones específicas
+                            when {
+                                camposFaltantes.isNotEmpty() -> {
+                                    viewModel.mostrarError("Campos obligatorios faltantes: ${camposFaltantes.joinToString(", ")}")
+                                }
+                                !android.util.Patterns.EMAIL_ADDRESS.matcher(correo).matches() -> {
+                                    viewModel.mostrarError("El formato del correo electrónico no es válido")
+                                }
+                                contraseña.length < 6 -> {
+                                    viewModel.mostrarError("La contraseña debe tener al menos 6 caracteres")
+                                }
+                                contraseña != confirmarContraseña -> {
+                                    viewModel.mostrarError("Las contraseñas no coinciden")
+                                }
+                                telefono.length < 9 -> {
+                                    viewModel.mostrarError("El número de teléfono debe tener al menos 9 dígitos")
+                                }
+                                else -> {
+                                    val repartidor = Repartidor(
+                                        id = "", // Firebase generará el ID
+                                        nombre = nombre.trim(),
+                                        apellidos = apellidos.trim(),
+                                        correo = correo.trim().lowercase(),
+                                        contraseña = contraseña, // En producción deberías hashear esto
+                                        telefono = telefono.trim(),
+                                        fotoUrl = fotoUrl.trim().ifEmpty { "" },
+                                        disponible = disponible,
+                                        calificacion = 5.0, // Calificación inicial
+                                        pedidosEntregados = 0 // Pedidos entregados inicial
+                                    )
 
-                                // Llamar al método del ViewModel para agregar repartidor
-                                viewModel.agregarRepartidor(repartidor)
-
-                            } else {
-                                // Mostrar error de validación
-                                val camposFaltantes = mutableListOf<String>()
-                                if (nombre.isBlank()) camposFaltantes.add("Nombre")
-                                if (apellidos.isBlank()) camposFaltantes.add("Apellidos")
-                                if (telefono.isBlank()) camposFaltantes.add("Teléfono")
-
-                                viewModel.mostrarError("Campos obligatorios faltantes: ${camposFaltantes.joinToString(", ")}")
+                                    // Llamar al método del ViewModel para agregar repartidor
+                                    viewModel.agregarRepartidor(repartidor)
+                                }
                             }
                         },
                         enabled = !isLoading,
@@ -323,6 +454,58 @@ fun AgregarRepartidorUI(
                     }
                 }
             }
+        }
+
+        // AlertDialog de éxito
+        if (mostrarAlertaExito) {
+            AlertDialog(
+                onDismissRequest = { /* No permitir cerrar tocando fuera */ },
+                title = {
+                    Text(
+                        text = "¡Éxito!",
+                        style = MaterialTheme.typography.headlineSmall,
+                        color = Color(0xFF2E7D32)
+                    )
+                },
+                text = {
+                    Text(
+                        text = "Repartidor registrado correctamente",
+                        style = MaterialTheme.typography.bodyLarge
+                    )
+                },
+                confirmButton = {
+                    Button(
+                        onClick = {
+                            mostrarAlertaExito = false
+
+                            // Limpiar formulario
+                            nombre = ""
+                            apellidos = ""
+                            correo = ""
+                            contraseña = ""
+                            confirmarContraseña = ""
+                            telefono = ""
+                            fotoUrl = ""
+                            disponible = true
+
+                            // Limpiar estados del ViewModel
+                            viewModel.limpiarEstados()
+
+                            // Navegar de vuelta
+                            onRepartidorGuardado()
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF8B4513),
+                            contentColor = Color.White
+                        )
+                    ) {
+                        Text("Aceptar")
+                    }
+                },
+                containerColor = Color.White,
+                titleContentColor = Color(0xFF2E7D32),
+                textContentColor = Color.Black
+            )
         }
     }
 }

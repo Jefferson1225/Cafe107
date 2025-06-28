@@ -485,6 +485,7 @@ fun ProgressoPedido(estado: EstadoOrden) {
             EstadoOrden.PENDIENTE -> 0f  // Cambiado de 0.2f a 0f
             EstadoOrden.CONFIRMADO -> 0.25f  // Ajustado para que comience aquí
             EstadoOrden.EN_PREPARACION -> 0.5f
+            EstadoOrden.ESPERANDO_REPARTIDOR -> 0.6f
             EstadoOrden.EN_CAMINO -> 0.75f
             EstadoOrden.ENTREGADO -> 1f
             EstadoOrden.CANCELADO -> 0f
@@ -599,6 +600,7 @@ fun EstadoBadge(estado: EstadoOrden) {
         EstadoOrden.PENDIENTE -> Color(0xFFFF9800) to "Pendiente"
         EstadoOrden.CONFIRMADO -> Color(0xFF2196F3) to "Activo"
         EstadoOrden.EN_PREPARACION -> Color(0xFFFF5722) to "Activo"
+        EstadoOrden.ESPERANDO_REPARTIDOR -> Color(0xFF2196F3) to "Activo"
         EstadoOrden.EN_CAMINO -> Color(0xFF9C27B0) to "Activo"
         EstadoOrden.ENTREGADO -> Color(0xFF4CAF50) to "Entregado"
         EstadoOrden.CANCELADO -> Color(0xFFF44336) to "Cancelado"

@@ -32,7 +32,6 @@ class PedidosViewModel @Inject constructor(
             _pedidosState.value = _pedidosState.value.copy(isLoading = true, error = null)
 
             try {
-                // Usar el Flow del servicio para obtener pedidos en tiempo real
                 ordenesService.getOrdenes()
                     .catch { exception ->
                         _pedidosState.value = _pedidosState.value.copy(
@@ -56,14 +55,89 @@ class PedidosViewModel @Inject constructor(
         }
     }
 
+    // MÉTODOS FALTANTES PARA REPARTIDORES:
+
+    fun cargarPedidosPorEstado(estado: EstadoOrden, onResult: (List<Orden>) -> Unit) {
+        viewModelScope.launch {
+            try {
+                ordenesService.getOrdenesPorEstado(estado)
+                    .catch { exception ->
+                        _pedidosState.value = _pedidosState.value.copy(
+                            error = "Error al cargar pedidos: ${exception.message}"
+                        )
+                    }
+                    .collect { pedidos ->
+                        onResult(pedidos)
+                    }
+            } catch (e: Exception) {
+                _pedidosState.value = _pedidosState.value.copy(
+                    error = "Error al cargar pedidos por estado: ${e.message}"
+                )
+            }
+        }
+    }
+
+
+    fun cargarPedidosDeRepartidor(repartidorId: String, onResult: (List<Orden>) -> Unit) {
+        viewModelScope.launch {
+            try {
+                ordenesService.getOrdenesPorRepartidor(repartidorId)
+                    .catch { exception ->
+                        _pedidosState.value = _pedidosState.value.copy(
+                            error = "Error al cargar pedidos: ${exception.message}"
+                        )
+                    }
+                    .collect { pedidos ->
+                        val pedidosEnCamino = pedidos.filter { it.estado == EstadoOrden.EN_CAMINO }
+                        onResult(pedidosEnCamino)
+                    }
+            } catch (e: Exception) {
+                _pedidosState.value = _pedidosState.value.copy(
+                    error = "Error al cargar pedidos del repartidor: ${e.message}"
+                )
+            }
+        }
+    }
+
+
+    fun asignarRepartidor(
+        pedidoId: String,
+        repartidorId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                // Asignar repartidor y cambiar estado a EN_CAMINO
+                ordenesService.asignarRepartidor(pedidoId, repartidorId)
+                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.EN_CAMINO)
+                onSuccess()
+            } catch (e: Exception) {
+                onError("Error al asignar repartidor: ${e.message}")
+            }
+        }
+    }
+
+
+    fun marcarComoEntregado(
+        pedidoId: String,
+        onSuccess: () -> Unit,
+        onError: (String) -> Unit
+    ) {
+        viewModelScope.launch {
+            try {
+                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.ENTREGADO)
+                onSuccess()
+            } catch (e: Exception) {
+                onError("Error al marcar como entregado: ${e.message}")
+            }
+        }
+    }
+
     fun actualizarEstadoPedido(pedidoId: String, nuevoEstado: EstadoOrden) {
         viewModelScope.launch {
             try {
                 ordenesService.actualizarEstadoOrden(pedidoId, nuevoEstado)
-
-                // El estado se actualizará automáticamente a través del Flow
-                // No necesitamos actualizar manualmente el estado local
-
             } catch (e: Exception) {
                 _pedidosState.value = _pedidosState.value.copy(
                     error = "Error al actualizar pedido: ${e.message}"
@@ -75,7 +149,4 @@ class PedidosViewModel @Inject constructor(
     fun limpiarError() {
         _pedidosState.value = _pedidosState.value.copy(error = null)
     }
-
-    // Ya no necesitamos este método porque usamos el Flow del servicio
-    // que ya proporciona actualizaciones en tiempo real
 }

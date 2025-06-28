@@ -2,7 +2,7 @@ package com.example.appcafe.Services
 
 import com.example.appcafe.db.EstadoOrden
 import com.example.appcafe.db.Orden
-import com.example.appcafe.db.Repartidor
+import com.example.cafeteria.db.AuthService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.Query
@@ -17,7 +17,8 @@ import javax.inject.Singleton
 @Singleton
 class OrdenesService @Inject constructor(
     private val firestore: FirebaseFirestore,
-    private val auth: FirebaseAuth
+    private val auth: FirebaseAuth,
+    private val authService: AuthService
 ) {
 
     private val userId get() = auth.currentUser?.uid ?: ""
@@ -27,14 +28,22 @@ class OrdenesService @Inject constructor(
 
     suspend fun crearOrden(orden: Orden): String {
         val orderId = UUID.randomUUID().toString()
+
+        val usuario = authService.obtenerUsuarioActual()
+        if (usuario == null) throw Exception("No se pudo obtener el usuario actual")
+
         val nuevaOrden = orden.copy(
             id = orderId,
-            usuarioId = userId
+            usuarioId = usuario.id,
+            usuarioNombre = usuario.nombre,
+            usuarioApellidos = usuario.apellidos,
+            usuarioTelefono = usuario.telefono
         )
 
         orderCollection.document(orderId).set(nuevaOrden).await()
         return orderId
     }
+
 
     fun getOrdenes(): Flow<List<Orden>> = callbackFlow {
         val listener = orderCollection
@@ -159,4 +168,44 @@ class OrdenesService @Inject constructor(
 
         return snapshot.toObjects(com.example.appcafe.db.Usuario::class.java)
     }
+
+    fun getOrdenesPorEstado(estado: EstadoOrden): Flow<List<Orden>> = callbackFlow {
+        val listener = orderCollection
+            .whereEqualTo("estado", estado.name)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val ordenes = snapshot?.documents?.mapNotNull { doc ->
+                    doc.toObject(Orden::class.java)?.copy(
+                        estado = EstadoOrden.valueOf(doc.getString("estado") ?: "PENDIENTE")
+                    )
+                } ?: emptyList()
+
+                trySend(ordenes)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+    fun getOrdenesPorRepartidor(repartidorId: String): Flow<List<Orden>> = callbackFlow {
+        val listener = orderCollection
+            .whereEqualTo("repartidorId", repartidorId)
+            .orderBy("fechaCreacion", Query.Direction.DESCENDING)
+            .addSnapshotListener { snapshot, error ->
+                if (error != null) {
+                    close(error)
+                    return@addSnapshotListener
+                }
+
+                val ordenes = snapshot?.toObjects(Orden::class.java) ?: emptyList()
+                trySend(ordenes)
+            }
+
+        awaitClose { listener.remove() }
+    }
+
+
 }

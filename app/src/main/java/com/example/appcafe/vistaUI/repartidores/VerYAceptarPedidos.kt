@@ -20,23 +20,48 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.appcafe.db.EstadoOrden
-import com.example.appcafe.db.ItemCarrito
 import com.example.appcafe.db.Orden
-import com.example.appcafe.viewModel.RepartidorViewModel
+import com.example.appcafe.viewModel.PedidosViewModel
+import com.example.cafeteria.db.AuthService
 import java.text.SimpleDateFormat
 import java.util.*
 
 @Composable
 fun VerYAceptarPedidosUI(
     repartidorId: String,
-    viewModel: RepartidorViewModel = hiltViewModel(),
+    pedidosViewModel: PedidosViewModel = hiltViewModel(),
     onNavigateBack: () -> Unit
 ) {
-    val pedidosState by viewModel.pedidosState.collectAsState()
     val context = LocalContext.current
+    val authService = remember { AuthService() }
 
+    // Estados para pedidos y repartidor
+    var pedidosDisponibles by remember { mutableStateOf<List<Orden>>(emptyList()) }
+    var pedidosEnCamino by remember { mutableStateOf<List<Orden>>(emptyList()) }
+    var isLoading by remember { mutableStateOf(true) }
+    var error by remember { mutableStateOf<String?>(null) }
+
+    // Cargar pedidos al iniciar
     LaunchedEffect(repartidorId) {
-        viewModel.cargarPedidosParaRepartidor()
+        try {
+            isLoading = true
+            error = null
+
+            // Cargar pedidos listos para entrega (EN_PREPARACION)
+            pedidosViewModel.cargarPedidosPorEstado(EstadoOrden.ESPERANDO_REPARTIDOR) { pedidos ->
+                pedidosDisponibles = pedidos
+            }
+
+            // Cargar pedidos asignados al repartidor (EN_CAMINO)
+            pedidosViewModel.cargarPedidosDeRepartidor(repartidorId) { pedidos ->
+                pedidosEnCamino = pedidos.filter { it.estado == EstadoOrden.EN_CAMINO }
+            }
+
+            isLoading = false
+        } catch (e: Exception) {
+            error = "Error al cargar pedidos: ${e.message}"
+            isLoading = false
+        }
     }
 
     Column(
@@ -60,7 +85,7 @@ fun VerYAceptarPedidosUI(
             }
 
             Text(
-                text = "Pedidos Disponibles",
+                text = "Mis Pedidos",
                 fontSize = 20.sp,
                 fontWeight = FontWeight.Medium,
                 color = Color(0xFF5D4037),
@@ -69,15 +94,15 @@ fun VerYAceptarPedidosUI(
         }
 
         when {
-            pedidosState.isLoading -> {
+            isLoading -> {
                 LoadingContent()
             }
 
-            pedidosState.error != null -> {
-                ErrorContent(error = pedidosState.error!!)
+            error != null -> {
+                ErrorContent(error = error!!)
             }
 
-            pedidosState.pedidos.isEmpty() -> {
+            pedidosDisponibles.isEmpty() && pedidosEnCamino.isEmpty() -> {
                 EmptyContent()
             }
 
@@ -88,20 +113,109 @@ fun VerYAceptarPedidosUI(
                         .padding(horizontal = 16.dp),
                     verticalArrangement = Arrangement.spacedBy(12.dp)
                 ) {
-                    items(pedidosState.pedidos) { pedido ->
-                        PedidoRepartidorCard(
-                            pedido = pedido,
-                            onAceptarPedido = {
-                                viewModel.aceptarPedido(pedido.id, repartidorId)
-                            },
-                            onEntregarPedido = {
-                                viewModel.marcarComoEntregado(pedido.id)
-                            },
-                            onLlamarCliente = { telefono ->
-                                val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))
-                                context.startActivity(intent)
-                            }
-                        )
+                    // Sección de pedidos en camino (mis entregas activas)
+                    if (pedidosEnCamino.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Mis Entregas Activas",
+                                icon = Icons.Default.DeliveryDining,
+                                count = pedidosEnCamino.size
+                            )
+                        }
+
+                        items(pedidosEnCamino) { pedido ->
+                            PedidoRepartidorCard(
+                                pedido = pedido,
+                                esPropio = true,
+                                onAceptarPedido = {
+                                    if (pedidosEnCamino.isNotEmpty()) {
+                                        error = "Solo puedes tener un pedido activo a la vez."
+                                    } else {
+                                        pedidosViewModel.asignarRepartidor(
+                                            pedidoId = pedido.id,
+                                            repartidorId = repartidorId,
+                                            onSuccess = {
+                                                // Recargar ambas listas
+                                                pedidosViewModel.cargarPedidosPorEstado(EstadoOrden.ESPERANDO_REPARTIDOR) { pedidos ->
+                                                    pedidosDisponibles = pedidos
+                                                }
+                                                pedidosViewModel.cargarPedidosDeRepartidor(repartidorId) { pedidos ->
+                                                    pedidosEnCamino = pedidos.filter { it.estado == EstadoOrden.EN_CAMINO }
+                                                }
+                                            },
+                                            onError = { errorMsg ->
+                                                error = errorMsg
+                                            }
+                                        )
+                                    }
+                                }
+                                ,
+                                onEntregarPedido = {
+                                    pedidosViewModel.marcarComoEntregado(
+                                        pedidoId = pedido.id,
+                                        onSuccess = {
+                                            // Recargar pedidos
+                                            pedidosViewModel.cargarPedidosDeRepartidor(repartidorId) { pedidos ->
+                                                pedidosEnCamino = pedidos.filter { it.estado == EstadoOrden.EN_CAMINO }
+                                            }
+                                        },
+                                        onError = { errorMsg ->
+                                            error = errorMsg
+                                        }
+                                    )
+                                },
+                                onLlamarUsuario = { telefono ->
+                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
+
+                        item {
+                            Spacer(modifier = Modifier.height(8.dp))
+                        }
+                    }
+
+                    // Sección de pedidos disponibles para tomar
+                    if (pedidosDisponibles.isNotEmpty()) {
+                        item {
+                            SectionHeader(
+                                title = "Pedidos Disponibles",
+                                icon = Icons.Default.LocalShipping,
+                                count = pedidosDisponibles.size
+                            )
+                        }
+
+                        items(pedidosDisponibles) { pedido ->
+                            PedidoRepartidorCard(
+                                pedido = pedido,
+                                esPropio = false,
+                                onAceptarPedido = {
+                                    pedidosViewModel.asignarRepartidor(
+                                        pedidoId = pedido.id,
+                                        repartidorId = repartidorId,
+                                        onSuccess = {
+                                            // Recargar ambas listas
+                                            pedidosViewModel.cargarPedidosPorEstado(EstadoOrden.ESPERANDO_REPARTIDOR) { pedidos ->
+                                                pedidosDisponibles = pedidos
+                                            }
+                                            pedidosViewModel.cargarPedidosDeRepartidor(repartidorId) { pedidos ->
+                                                pedidosEnCamino = pedidos.filter { it.estado == EstadoOrden.EN_CAMINO }
+                                            }
+                                        },
+                                        onError = { errorMsg ->
+                                            error = errorMsg
+                                        }
+                                    )
+                                }
+                                ,
+                                onEntregarPedido = { /* No aplica para pedidos no asignados */ },
+                                onLlamarUsuario = { telefono ->
+                                    val intent = Intent(Intent.ACTION_DIAL, Uri.parse("tel:$telefono"))
+                                    context.startActivity(intent)
+                                }
+                            )
+                        }
                     }
 
                     item {
@@ -114,15 +228,65 @@ fun VerYAceptarPedidosUI(
 }
 
 @Composable
-fun PedidoRepartidorCard(
-    pedido: Orden,
-    onAceptarPedido: () -> Unit,
-    onEntregarPedido: () -> Unit,
-    onLlamarCliente: (String) -> Unit
+fun SectionHeader(
+    title: String,
+    icon: androidx.compose.ui.graphics.vector.ImageVector,
+    count: Int
 ) {
     Card(
         modifier = Modifier.fillMaxWidth(),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
+        colors = CardDefaults.cardColors(containerColor = Color(0xFF8B4513)),
+        shape = RoundedCornerShape(8.dp)
+    ) {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .padding(12.dp),
+            verticalAlignment = Alignment.CenterVertically
+        ) {
+            Icon(
+                imageVector = icon,
+                contentDescription = null,
+                tint = Color.White,
+                modifier = Modifier.size(24.dp)
+            )
+            Spacer(modifier = Modifier.width(12.dp))
+            Text(
+                text = title,
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier.weight(1f)
+            )
+            Text(
+                text = count.toString(),
+                fontSize = 16.sp,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                modifier = Modifier
+                    .background(
+                        Color.White.copy(alpha = 0.2f),
+                        RoundedCornerShape(12.dp)
+                    )
+                    .padding(horizontal = 8.dp, vertical = 4.dp)
+            )
+        }
+    }
+}
+
+@Composable
+fun PedidoRepartidorCard(
+    pedido: Orden,
+    esPropio: Boolean, // Si el pedido ya está asignado al repartidor
+    onAceptarPedido: () -> Unit,
+    onEntregarPedido: () -> Unit,
+    onLlamarUsuario: (String) -> Unit // CAMBIADO: onLlamarCliente -> onLlamarUsuario
+) {
+    Card(
+        modifier = Modifier.fillMaxWidth(),
+        colors = CardDefaults.cardColors(
+            containerColor = if (esPropio) Color(0xFFF0F8FF) else Color.White
+        ),
         elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
         shape = RoundedCornerShape(12.dp)
     ) {
@@ -149,10 +313,52 @@ fun PedidoRepartidorCard(
                     )
                 }
 
-                EstadoRepartidorBadge(estado = pedido.estado)
+                EstadoRepartidorBadge(
+                    estado = pedido.estado,
+                    esPropio = esPropio
+                )
             }
 
             Spacer(modifier = Modifier.height(16.dp))
+
+            // Información del usuario (solo si es propio)
+            if (esPropio && pedido.usuarioNombre.isNotEmpty()) {
+                Card(
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F8F0)),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(12.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Person,
+                            contentDescription = "Usuario", // CAMBIADO: Cliente -> Usuario
+                            tint = Color(0xFF4CAF50),
+                            modifier = Modifier.size(20.dp)
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Column {
+                            Text(
+                                text = "Usuario:", // CAMBIADO: Cliente -> Usuario
+                                fontSize = 12.sp,
+                                color = Color(0xFF8D6E63)
+                            )
+                            Text(
+                                text = "${pedido.usuarioNombre} ${pedido.usuarioApellidos}", // CAMBIADO: Usar nombre completo
+                                fontSize = 14.sp,
+                                color = Color(0xFF5D4037),
+                                fontWeight = FontWeight.Medium
+                            )
+                        }
+                    }
+                }
+
+                Spacer(modifier = Modifier.height(12.dp))
+            }
 
             // Dirección
             Card(
@@ -262,84 +468,67 @@ fun PedidoRepartidorCard(
 
             Spacer(modifier = Modifier.height(16.dp))
 
-            // Botones según el estado
-            when (pedido.estado) {
-                EstadoOrden.EN_PREPARACION -> {
-                    // Botón para aceptar el pedido
-                    Button(
-                        onClick = onAceptarPedido,
-                        modifier = Modifier.fillMaxWidth(),
-                        colors = ButtonDefaults.buttonColors(
-                            containerColor = Color(0xFF2196F3)
+            // Botones según el estado y si es propio
+            if (esPropio && pedido.estado == EstadoOrden.EN_CAMINO) {
+                // Pedido asignado al repartidor - mostrar botones de acción
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(8.dp)
+                ) {
+                    OutlinedButton(
+                        onClick = { onLlamarUsuario(pedido.usuarioTelefono) },
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.outlinedButtonColors(
+                            contentColor = Color(0xFF2196F3)
                         ),
                         shape = RoundedCornerShape(8.dp)
                     ) {
                         Icon(
-                            imageVector = Icons.Default.DeliveryDining,
+                            imageVector = Icons.Default.Phone,
                             contentDescription = null,
-                            modifier = Modifier.size(20.dp)
+                            modifier = Modifier.size(18.dp)
                         )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Text(
-                            text = "Aceptar Entrega",
-                            fontSize = 14.sp,
-                            fontWeight = FontWeight.Medium
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Llamar", fontSize = 12.sp)
+                    }
+
+                    Button(
+                        onClick = onEntregarPedido,
+                        modifier = Modifier.weight(1f),
+                        colors = ButtonDefaults.buttonColors(
+                            containerColor = Color(0xFF4CAF50)
+                        ),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.CheckCircle,
+                            contentDescription = null,
+                            modifier = Modifier.size(18.dp)
                         )
+                        Spacer(modifier = Modifier.width(4.dp))
+                        Text("Entregar", fontSize = 12.sp)
                     }
                 }
-
-                EstadoOrden.EN_CAMINO -> {
-                    // Mostrar información del cliente y botones de acción
-                    Column {
-                        // Botón para llamar (simulado - en producción necesitarías el teléfono real)
-                        Row(
-                            modifier = Modifier.fillMaxWidth(),
-                            horizontalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            OutlinedButton(
-                                onClick = { onLlamarCliente("123456789") }, // Teléfono simulado
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.outlinedButtonColors(
-                                    contentColor = Color(0xFF4CAF50)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.Phone,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Llamar", fontSize = 12.sp)
-                            }
-
-                            Button(
-                                onClick = onEntregarPedido,
-                                modifier = Modifier.weight(1f),
-                                colors = ButtonDefaults.buttonColors(
-                                    containerColor = Color(0xFF4CAF50)
-                                ),
-                                shape = RoundedCornerShape(8.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.CheckCircle,
-                                    contentDescription = null,
-                                    modifier = Modifier.size(18.dp)
-                                )
-                                Spacer(modifier = Modifier.width(4.dp))
-                                Text("Entregar", fontSize = 12.sp)
-                            }
-                        }
-                    }
-                }
-
-                else -> {
-                    // Para otros estados, mostrar información
+            } else if (!esPropio && pedido.estado == EstadoOrden.ESPERANDO_REPARTIDOR) {
+                // Pedido disponible para tomar
+                Button(
+                    onClick = onAceptarPedido,
+                    modifier = Modifier.fillMaxWidth(),
+                    colors = ButtonDefaults.buttonColors(
+                        containerColor = Color(0xFF2196F3)
+                    ),
+                    shape = RoundedCornerShape(8.dp)
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.DeliveryDining,
+                        contentDescription = null,
+                        modifier = Modifier.size(20.dp)
+                    )
+                    Spacer(modifier = Modifier.width(8.dp))
                     Text(
-                        text = "Estado: ${pedido.estado.name}",
+                        text = "Aceptar Entrega",
                         fontSize = 14.sp,
-                        color = Color(0xFF8D6E63),
-                        modifier = Modifier.fillMaxWidth()
+                        fontWeight = FontWeight.Medium
                     )
                 }
             }
@@ -348,12 +537,19 @@ fun PedidoRepartidorCard(
 }
 
 @Composable
-fun EstadoRepartidorBadge(estado: EstadoOrden) {
-    val (color, text, icon) = when (estado) {
-        EstadoOrden.EN_PREPARACION -> Triple(Color(0xFFFF5722), "Listo", Icons.Default.RestaurantMenu)
-        EstadoOrden.EN_CAMINO -> Triple(Color(0xFF9C27B0), "En Camino", Icons.Default.DeliveryDining)
-        EstadoOrden.ENTREGADO -> Triple(Color(0xFF4CAF50), "Entregado", Icons.Default.CheckCircle)
-        else -> Triple(Color(0xFF8D6E63), estado.name, Icons.Default.Info)
+fun EstadoRepartidorBadge(
+    estado: EstadoOrden,
+    esPropio: Boolean = false
+) {
+    val (color, text, icon) = when {
+        estado == EstadoOrden.EN_PREPARACION && !esPropio ->
+            Triple(Color(0xFFFF5722), "Disponible", Icons.Default.LocalShipping)
+        estado == EstadoOrden.EN_CAMINO && esPropio ->
+            Triple(Color(0xFF9C27B0), "Mi Entrega", Icons.Default.DeliveryDining)
+        estado == EstadoOrden.ENTREGADO ->
+            Triple(Color(0xFF4CAF50), "Entregado", Icons.Default.CheckCircle)
+        else ->
+            Triple(Color(0xFF8D6E63), estado.name, Icons.Default.Info)
     }
 
     Row(
@@ -410,8 +606,16 @@ fun ErrorContent(error: String) {
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
         ) {
+            Icon(
+                imageVector = Icons.Default.Error,
+                contentDescription = null,
+                tint = Color(0xFFD32F2F),
+                modifier = Modifier.size(64.dp)
+            )
+            Spacer(modifier = Modifier.height(16.dp))
             Text(
                 text = "Error al cargar pedidos",
                 fontSize = 18.sp,
@@ -422,7 +626,7 @@ fun ErrorContent(error: String) {
                 text = error,
                 fontSize = 14.sp,
                 color = Color(0xFF8D6E63),
-                modifier = Modifier.padding(16.dp)
+                modifier = Modifier.padding(top = 8.dp)
             )
         }
     }
@@ -435,7 +639,8 @@ fun EmptyContent() {
         contentAlignment = Alignment.Center
     ) {
         Column(
-            horizontalAlignment = Alignment.CenterHorizontally
+            horizontalAlignment = Alignment.CenterHorizontally,
+            modifier = Modifier.padding(16.dp)
         ) {
             Icon(
                 imageVector = Icons.Default.DeliveryDining,

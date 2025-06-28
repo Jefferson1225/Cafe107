@@ -40,8 +40,17 @@ class CocinaViewModel @Inject constructor(
                         )
                     }
                     .collect { pedidos ->
+                        // Filtrar solo pedidos que necesita ver la cocina
+                        val pedidosCocina = pedidos.filter { pedido ->
+                            pedido.estado in listOf(
+                                EstadoOrden.PENDIENTE,
+                                EstadoOrden.CONFIRMADO,
+                                EstadoOrden.EN_PREPARACION
+                            )
+                        }
+
                         _pedidosState.value = _pedidosState.value.copy(
-                            pedidos = pedidos,
+                            pedidos = pedidosCocina,
                             isLoading = false,
                             error = null
                         )
@@ -55,13 +64,31 @@ class CocinaViewModel @Inject constructor(
         }
     }
 
+    fun confirmarPedido(pedidoId: String) {
+        viewModelScope.launch {
+            try {
+                // Cambiar de PENDIENTE a CONFIRMADO o EN_PREPARACION
+                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.EN_PREPARACION)
+
+                // Recargar pedidos para reflejar el cambio
+                cargarPedidosParaCocina()
+
+            } catch (e: Exception) {
+                _pedidosState.value = _pedidosState.value.copy(
+                    error = "Error al confirmar pedido: ${e.message}"
+                )
+            }
+        }
+    }
+
     fun pasarPedidoARepartidor(pedidoId: String) {
         viewModelScope.launch {
             try {
-                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.EN_PREPARACION)
+                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.ESPERANDO_REPARTIDOR)
+                cargarPedidosParaCocina()
             } catch (e: Exception) {
                 _pedidosState.value = _pedidosState.value.copy(
-                    error = "Error al actualizar pedido: ${e.message}"
+                    error = "Error al pasar pedido a repartidor: ${e.message}"
                 )
             }
         }
@@ -69,19 +96,5 @@ class CocinaViewModel @Inject constructor(
 
     fun limpiarError() {
         _pedidosState.value = _pedidosState.value.copy(error = null)
-    }
-
-    fun confirmarPedido(pedidoId: String) {
-        viewModelScope.launch {
-            try {
-                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.CONFIRMADO)
-                // Recargar los pedidos para reflejar el cambio
-                cargarPedidosParaCocina()
-            } catch (e: Exception) {
-                _pedidosState.value = _pedidosState.value.copy(
-                    error = "Error al confirmar pedido: ${e.message}"
-                )
-            }
-        }
     }
 }
