@@ -269,6 +269,12 @@ fun RegistroUI(navController: NavController) {
                                     contraseña.isEmpty() || confirmarContraseña.isEmpty() -> {
                                 errorMessage = "Complete todos los campos"
                             }
+                            !esNombreValido(nombre) -> {
+                                errorMessage = "Nombre inválido. Solo letras y espacios"
+                            }
+                            !esNombreValido(apellidos) -> {
+                                errorMessage = "Apellidos inválidos. Solo letras y espacios"
+                            }
                             contraseña != confirmarContraseña -> {
                                 errorMessage = "Las contraseñas no coinciden"
                             }
@@ -348,5 +354,10 @@ fun RegistroUI(navController: NavController) {
                 }
             }
         }
+
     }
+}
+
+fun esNombreValido(texto: String): Boolean {
+    return texto.matches(Regex("^[a-zA-ZáéíóúÁÉÍÓÚñÑ ]+\$"))
 }
