@@ -67,12 +67,11 @@ class CocinaViewModel @Inject constructor(
     fun confirmarPedido(pedidoId: String) {
         viewModelScope.launch {
             try {
-                // Cambiar de PENDIENTE a CONFIRMADO o EN_PREPARACION
-                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.EN_PREPARACION)
+                // Cambiar de PENDIENTE a CONFIRMADO
+                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.CONFIRMADO)
 
                 // Recargar pedidos para reflejar el cambio
                 cargarPedidosParaCocina()
-
             } catch (e: Exception) {
                 _pedidosState.value = _pedidosState.value.copy(
                     error = "Error al confirmar pedido: ${e.message}"
@@ -81,10 +80,31 @@ class CocinaViewModel @Inject constructor(
         }
     }
 
+
     fun pasarPedidoARepartidor(pedidoId: String) {
         viewModelScope.launch {
             try {
-                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.ESPERANDO_REPARTIDOR)
+                val orden = ordenesService.getOrdenById(pedidoId)
+
+                when (orden?.estado) {
+                    EstadoOrden.CONFIRMADO -> {
+                        // Pasa de CONFIRMADO -> EN_PREPARACION
+                        ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.EN_PREPARACION)
+                    }
+
+                    EstadoOrden.EN_PREPARACION -> {
+                        // Pasa de EN_PREPARACION -> ESPERANDO_REPARTIDOR
+                        ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.ESPERANDO_REPARTIDOR)
+                    }
+
+                    else -> {
+                        _pedidosState.value = _pedidosState.value.copy(
+                            error = "No se puede pasar a repartidor desde el estado ${orden?.estado}"
+                        )
+                        return@launch
+                    }
+                }
+
                 cargarPedidosParaCocina()
             } catch (e: Exception) {
                 _pedidosState.value = _pedidosState.value.copy(
@@ -93,6 +113,7 @@ class CocinaViewModel @Inject constructor(
             }
         }
     }
+
 
     fun limpiarError() {
         _pedidosState.value = _pedidosState.value.copy(error = null)

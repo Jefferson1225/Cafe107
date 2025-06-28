@@ -129,6 +129,12 @@ fun PedidoCocinaCard(
                         color = Color(0xFF5D4037)
                     )
                     Text(
+                        text = "${pedido.usuarioNombre} ${pedido.usuarioApellidos}",
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.Medium,
+                        color = Color(0xFF795548)
+                    )
+                    Text(
                         text = formatearFecha(pedido.fechaCreacion),
                         fontSize = 12.sp,
                         color = Color(0xFF8D6E63)
@@ -414,6 +420,6 @@ fun EmptyContent() {
 
 fun formatearFecha(timestamp: Long): String {
     val date = Date(timestamp)
-    val formatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
+    val formatter = SimpleDateFormat("dd/MM/YYYY HH:mm", Locale.getDefault())
     return formatter.format(date)
 }
