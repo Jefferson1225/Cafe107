@@ -1,5 +1,6 @@
 package com.example.appcafe.di
 
+import com.example.appcafe.Services.RepartidorService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import dagger.Module

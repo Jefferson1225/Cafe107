@@ -29,8 +29,8 @@ import com.example.appcafe.vistaUI.PerfilUI
 import com.example.appcafe.SubsUI.ProductoDetalleUI
 import com.example.appcafe.SubsUI.DireccionesUI
 import com.example.appcafe.SubsUI.FavoritosUI
-import com.example.appcafe.vistaUI.admin.AgregarDeliveryUI
 import com.example.appcafe.vistaUI.admin.AgregarProductoUI
+import com.example.appcafe.vistaUI.admin.AgregarRepartidorUI
 import com.example.appcafe.vistaUI.admin.PedidosPreparar
 import com.example.appcafe.vistaUI.repartidores.VerYAceptarPedidosUI
 import com.example.appcare.vistaUI.CarritoUI
@@ -132,7 +132,7 @@ fun ManejadorNav(
             }
 
             composable(PantallasNav.ItemAgregarDelivery.ruta) {
-                AgregarDeliveryUI()
+                AgregarRepartidorUI()
             }
 
             composable(PantallasNav.ItemPedidosPreparar.ruta) {

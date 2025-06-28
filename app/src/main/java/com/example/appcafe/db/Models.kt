@@ -34,7 +34,6 @@ data class Direccion(
     val descripcion: String = "",
     val esPrincipal: Boolean = false,
     val icono: String = ""
-
 )
 
 //modelo de producto

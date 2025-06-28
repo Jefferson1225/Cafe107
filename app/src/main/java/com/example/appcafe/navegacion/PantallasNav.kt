@@ -41,8 +41,8 @@ sealed class  PantallasNav(val titulo:String,
         RutasNav.AgregarProduct.name,Icons.Outlined.Add,
         Color(0xFF6F4E37)
     )
-    object ItemAgregarDelivery:PantallasNav(RutasNav.AgregarDelivery.name,
-        RutasNav.AgregarDelivery.name,Icons.Outlined.Add,
+    object ItemAgregarDelivery:PantallasNav(RutasNav.AgregarRepartidor.name,
+        RutasNav.AgregarRepartidor.name,Icons.Outlined.Add,
         Color(0xFF6F4E37)
     )
     object ItemPedidosPreparar:PantallasNav(RutasNav.PedidosPreparar.name,
