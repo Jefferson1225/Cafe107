@@ -147,7 +147,6 @@ fun ManejadorNav(
             }
             composable("mis_entregas") {
                 MisEntregasUI(
-                    repartidorId = usuario.id,
                     onNavigateBack = { navControlador.popBackStack() }
                 )
             }

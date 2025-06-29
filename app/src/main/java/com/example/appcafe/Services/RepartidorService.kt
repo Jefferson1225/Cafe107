@@ -18,28 +18,8 @@ class RepartidorService @Inject constructor(
         private const val COLLECTION_REPARTIDORES = "repartidores"
     }
 
-    suspend fun agregarRepartidor(repartidor: Repartidor): String {
-        return try {
-            val docRef = firestore.collection(COLLECTION_REPARTIDORES).document()
-            val repartidorConId = repartidor.copy(id = docRef.id)
-            docRef.set(repartidorConId).await()
-            docRef.id
-        } catch (e: Exception) {
-            throw Exception("Error al agregar repartidor: ${e.message}")
-        }
-    }
-
     fun getAllRepartidores(): Flow<List<Repartidor>> {
         return firestore.collection(COLLECTION_REPARTIDORES)
-            .snapshots()
-            .map { snapshot ->
-                snapshot.toObjects<Repartidor>()
-            }
-    }
-
-    fun getRepartidoresDisponibles(): Flow<List<Repartidor>> {
-        return firestore.collection(COLLECTION_REPARTIDORES)
-            .whereEqualTo("disponible", true)
             .snapshots()
             .map { snapshot ->
                 snapshot.toObjects<Repartidor>()
@@ -65,31 +45,6 @@ class RepartidorService @Inject constructor(
                 .await()
         } catch (e: Exception) {
             throw Exception("Error al actualizar calificación: ${e.message}")
-        }
-    }
-
-    suspend fun incrementarPedidosEntregados(repartidorId: String) {
-        try {
-            val docRef = firestore.collection(COLLECTION_REPARTIDORES).document(repartidorId)
-            firestore.runTransaction { transaction ->
-                val snapshot = transaction.get(docRef)
-                val pedidosActuales = snapshot.getLong("pedidosEntregados") ?: 0
-                transaction.update(docRef, "pedidosEntregados", pedidosActuales + 1)
-            }.await()
-        } catch (e: Exception) {
-            throw Exception("Error al incrementar pedidos entregados: ${e.message}")
-        }
-    }
-
-    suspend fun getRepartidorById(repartidorId: String): Repartidor? {
-        return try {
-            val document = firestore.collection(COLLECTION_REPARTIDORES)
-                .document(repartidorId)
-                .get()
-                .await()
-            document.toObject(Repartidor::class.java)
-        } catch (e: Exception) {
-            null
         }
     }
 

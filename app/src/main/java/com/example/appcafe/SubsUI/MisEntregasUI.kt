@@ -18,40 +18,35 @@ import com.example.appcafe.db.Orden
 import com.example.cafeteria.db.AuthService
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
+import kotlinx.coroutines.flow.catch
 import java.text.SimpleDateFormat
 import java.util.*
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
 fun MisEntregasUI(
-    repartidorId: String,
     onNavigateBack: () -> Unit
 ) {
+    val repartidorId = FirebaseAuth.getInstance().currentUser?.uid ?: return
     val ordenesService = remember { OrdenesService(firestore = FirebaseFirestore.getInstance(),
         auth = FirebaseAuth.getInstance(),
         authService = AuthService()) }
     var ordenesAgrupadas by remember { mutableStateOf<Map<String, List<Orden>>>(emptyMap()) }
 
     LaunchedEffect(repartidorId) {
-        ordenesService.obtenerTodasLasOrdenes(
-            onSuccess = { todas ->
-                val relevantes = todas.filter {
-                    (it.estado == EstadoOrden.EN_CAMINO || it.estado == EstadoOrden.ENTREGADO)
-                            && it.repartidorId == repartidorId
-                }.sortedByDescending { it.fechaCreacion }
-
-                val agrupadas = relevantes.groupBy { orden ->
-                    obtenerEtiquetaFecha(Date(orden.fechaCreacion))
-                }
+        ordenesService.getOrdenesPorRepartidor(repartidorId)
+            .catch {
+                ordenesAgrupadas = emptyMap()
+            }
+            .collect { ordenes ->
+                val agrupadas = ordenes
+                    .sortedByDescending { it.fechaCreacion }
+                    .groupBy { obtenerEtiquetaFecha(Date(it.fechaCreacion)) }
 
                 ordenesAgrupadas = agrupadas.toSortedMap(compareByDescending { clave ->
                     parseFechaEtiqueta(clave)
                 })
-            },
-            onError = {
-                ordenesAgrupadas = emptyMap()
             }
-        )
     }
 
     val formatoHora = remember { SimpleDateFormat("HH:mm", Locale.getDefault()) }

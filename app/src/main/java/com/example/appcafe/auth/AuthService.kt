@@ -6,7 +6,6 @@ import com.example.appcafe.db.Repartidor
 import com.google.firebase.auth.FirebaseAuth
 import com.google.firebase.firestore.FirebaseFirestore
 import com.google.firebase.firestore.toObject
-import kotlinx.coroutines.runBlocking
 import kotlinx.coroutines.tasks.await
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -138,26 +137,6 @@ class AuthService @Inject constructor() {
     }
 
 
-    // NUEVO: Obtener datos del repartidor actual
-    suspend fun obtenerRepartidorActual(): Repartidor? {
-        val uid = auth.currentUser?.uid ?: return null
-        return try {
-            val documento = firestore.collection("repartidores").document(uid).get().await()
-            documento.toObject<Repartidor>()
-        } catch (e: Exception) {
-            null
-        }
-    }
-
-    fun esAdmin(): Boolean {
-        return runBlocking { obtenerUsuarioActual()?.esAdmin ?: false }
-    }
-
-    // NUEVO: Verificar si es repartidor
-    fun esRepartidor(): Boolean {
-        return runBlocking { obtenerUsuarioActual()?.esRepartidor ?: false }
-    }
-
     // NUEVO: Obtener tipo de usuario
     suspend fun obtenerTipoUsuario(): TipoUsuario {
         val usuario = obtenerUsuarioActual()
@@ -173,9 +152,6 @@ class AuthService @Inject constructor() {
         auth.signOut()
     }
 
-    fun estaLogueado(): Boolean {
-        return auth.currentUser != null
-    }
 }
 
 // NUEVO: Enum para tipos de usuario

@@ -110,7 +110,6 @@ class PedidosViewModel @Inject constructor(
             try {
                 // Asignar repartidor y cambiar estado a EN_CAMINO
                 ordenesService.asignarRepartidor(pedidoId, repartidorId)
-                ordenesService.actualizarEstadoOrden(pedidoId, EstadoOrden.EN_CAMINO)
                 onSuccess()
             } catch (e: Exception) {
                 onError("Error al asignar repartidor: ${e.message}")
