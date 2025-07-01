@@ -210,7 +210,7 @@ fun DireccionesUI(
                         value = descripcionNueva,
                         onValueChange = { descripcionNueva = it },
                         label = { Text("Descripción de la dirección", color = CafeTexto) },
-                        placeholder = { Text("Ej: Av. Lima 123, San Juan", color = CafeTexto.copy(alpha = 0.5f)) },
+                        placeholder = { Text("Ej: Av. Arequipa 123, Miraflores, Lima, Perú", color = CafeTexto.copy(alpha = 0.5f)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = CafeTexto,
@@ -341,8 +341,8 @@ fun DireccionesUI(
                     OutlinedTextField(
                         value = descripcionEditar,
                         onValueChange = { descripcionEditar = it },
-                        label = { Text("Descripción de la dirección", color = CafeTexto) },
-                        placeholder = { Text("Ej: Av. Lima 123, San Juan", color = CafeTexto.copy(alpha = 0.5f)) },
+                        label = { Text("Descripción de la dirección (Introducir tal cual el ejemplo)", color = CafeTexto) },
+                        placeholder = { Text("Ej: Av. Arequipa 123, Miraflores, Lima, Perú", color = CafeTexto.copy(alpha = 0.5f)) },
                         modifier = Modifier.fillMaxWidth(),
                         colors = OutlinedTextFieldDefaults.colors(
                             focusedTextColor = CafeTexto,

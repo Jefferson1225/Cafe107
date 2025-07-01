@@ -1,5 +1,7 @@
 package com.example.appcafe.viewModel
 
+import android.content.Context
+import android.location.Geocoder
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.example.appcafe.Services.RepartidorService
@@ -135,3 +137,15 @@ data class RepartidorState(
     val error: String? = null,
     val operacionExitosa: Boolean = false
 )
+
+suspend fun obtenerCoordenadasDesdeDireccion(context: Context, direccion: String): Pair<Double, Double>? {
+    return try {
+        val geocoder = Geocoder(context)
+        val resultados = geocoder.getFromLocationName(direccion, 1)
+        if (resultados.isNullOrEmpty()) null
+        else Pair(resultados[0].latitude, resultados[0].longitude)
+    } catch (e: Exception) {
+        null
+    }
+}
+

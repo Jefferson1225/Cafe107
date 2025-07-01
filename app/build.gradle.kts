@@ -48,6 +48,10 @@ dependencies {
     // Hilt para inyección de dependencias
     implementation("com.google.dagger:hilt-android:2.48")
     kapt("com.google.dagger:hilt-compiler:2.48")
+    //google play services
+    implementation ("com.google.android.gms:play-services-maps:18.2.0")
+    implementation ("com.google.android.gms:play-services-location:21.0.1")
+    implementation ("com.google.maps.android:maps-compose:4.1.1")
 
     //lootie
     implementation ("com.airbnb.android:lottie-compose:6.1.0")

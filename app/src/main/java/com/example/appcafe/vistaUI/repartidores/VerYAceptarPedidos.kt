@@ -3,6 +3,7 @@ package com.example.appcafe.vistaUI.repartidores
 import android.content.Intent
 import android.net.Uri
 import androidx.compose.foundation.background
+import androidx.compose.foundation.gestures.snapping.SnapPosition.Center.position
 import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,7 +23,14 @@ import androidx.hilt.navigation.compose.hiltViewModel
 import com.example.appcafe.db.EstadoOrden
 import com.example.appcafe.db.Orden
 import com.example.appcafe.viewModel.PedidosViewModel
+import com.example.appcafe.viewModel.obtenerCoordenadasDesdeDireccion
 import com.example.cafeteria.db.AuthService
+import com.google.maps.android.compose.GoogleMap
+import com.google.android.gms.maps.model.CameraPosition
+import com.google.android.gms.maps.model.LatLng
+import com.google.maps.android.compose.Marker
+import com.google.maps.android.compose.MarkerState
+import com.google.maps.android.compose.rememberCameraPositionState
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -322,43 +330,58 @@ fun PedidoRepartidorCard(
             Spacer(modifier = Modifier.height(16.dp))
 
             // Información del usuario (solo si es propio)
-            if (esPropio && pedido.usuarioNombre.isNotEmpty()) {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    colors = CardDefaults.cardColors(containerColor = Color(0xFFF0F8F0)),
-                    shape = RoundedCornerShape(8.dp)
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(12.dp),
-                        verticalAlignment = Alignment.CenterVertically
-                    ) {
-                        Icon(
-                            imageVector = Icons.Default.Person,
-                            contentDescription = "Usuario", // CAMBIADO: Cliente -> Usuario
-                            tint = Color(0xFF4CAF50),
-                            modifier = Modifier.size(20.dp)
-                        )
-                        Spacer(modifier = Modifier.width(8.dp))
-                        Column {
-                            Text(
-                                text = "Usuario:", // CAMBIADO: Cliente -> Usuario
-                                fontSize = 12.sp,
-                                color = Color(0xFF8D6E63)
-                            )
-                            Text(
-                                text = "${pedido.usuarioNombre} ${pedido.usuarioApellidos}", // CAMBIADO: Usar nombre completo
-                                fontSize = 14.sp,
-                                color = Color(0xFF5D4037),
-                                fontWeight = FontWeight.Medium
-                            )
-                        }
-                    }
+            if (esPropio && pedido.estado == EstadoOrden.EN_CAMINO) {
+                val context = LocalContext.current
+                var coordenadas by remember { mutableStateOf<Pair<Double, Double>?>(null) }
+
+                LaunchedEffect(pedido.id) {
+                    coordenadas = obtenerCoordenadasDesdeDireccion(context, pedido.direccionEntrega.descripcion)
                 }
 
-                Spacer(modifier = Modifier.height(12.dp))
+                Spacer(modifier = Modifier.height(16.dp))
+
+                coordenadas?.let { (lat, lon) ->
+                    val cameraPositionState = rememberCameraPositionState {
+                        position = CameraPosition.fromLatLngZoom(LatLng(lat, lon), 16f)
+                    }
+
+                    GoogleMap(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(250.dp),
+                        cameraPositionState = cameraPositionState
+                    ) {
+                        Marker(
+                            state = MarkerState(position = LatLng(lat, lon)),
+                            title = "Destino del cliente"
+                        )
+                    }
+                    Button(
+                        onClick = {
+                            val uri = Uri.parse("geo:${lat},${lon}?q=${lat},${lon}(Destino del cliente)")
+                            val intent = Intent(Intent.ACTION_VIEW, uri).apply {
+                                setPackage("com.google.android.apps.maps")
+                            }
+                            context.startActivity(intent)
+                        },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(top = 8.dp),
+                        colors = ButtonDefaults.buttonColors(containerColor = Color(0xFF1E88E5)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Icon(
+                            imageVector = Icons.Default.Map,
+                            contentDescription = null,
+                            tint = Color.White
+                        )
+                        Spacer(modifier = Modifier.width(8.dp))
+                        Text("Ver en Google Maps", color = Color.White)
+                    }
+
+                }
             }
+
 
             // Dirección
             Card(
@@ -670,3 +693,4 @@ fun formatearFecha(timestamp: Long): String {
     val formatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
     return formatter.format(date)
 }
+

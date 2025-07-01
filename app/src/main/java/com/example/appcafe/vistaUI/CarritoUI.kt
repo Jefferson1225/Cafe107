@@ -340,7 +340,7 @@ fun AgregarDireccionDialog(
                     value = descripcion,
                     onValueChange = { descripcion = it },
                     label = { Text("Dirección completa") },
-                    placeholder = { Text("Ej: Av. Ejemplo 123, Distrito, Ciudad") },
+                    placeholder = { Text("Ej: Av. Arequipa 123, Miraflores, Lima, Perú") },
                     modifier = Modifier.fillMaxWidth(),
                     minLines = 2,
                     colors = OutlinedTextFieldDefaults.colors(

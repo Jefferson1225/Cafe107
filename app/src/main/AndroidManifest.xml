@@ -3,6 +3,9 @@
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
+
 
     <application
         android:allowBackup="true"
@@ -15,6 +18,9 @@
         android:theme="@style/Theme.AppCafe"
         android:name=".MyApp"
         tools:targetApi="31">
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="AIzaSyAUzLe2m7zgRJ_3iPyxMkIc6BXDB-_Eb0k" />
         <activity
             android:name=".MainActivity"
             android:exported="true"
