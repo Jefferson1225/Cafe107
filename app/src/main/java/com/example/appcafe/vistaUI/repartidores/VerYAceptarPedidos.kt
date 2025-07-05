@@ -345,6 +345,43 @@ fun PedidoRepartidorCard(
                         position = CameraPosition.fromLatLngZoom(LatLng(lat, lon), 16f)
                     }
 
+                    // Información del usuario
+                    Card(
+                        modifier = Modifier.fillMaxWidth(),
+                        colors = CardDefaults.cardColors(containerColor = Color(0xFFE8F5E8)),
+                        shape = RoundedCornerShape(8.dp)
+                    ) {
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(12.dp),
+                            verticalAlignment = Alignment.CenterVertically
+                        ) {
+                            Icon(
+                                imageVector = Icons.Default.Person,
+                                contentDescription = null,
+                                tint = Color(0xFF4CAF50),
+                                modifier = Modifier.size(20.dp)
+                            )
+                            Spacer(modifier = Modifier.width(8.dp))
+                            Column {
+                                Text(
+                                    text = "Usuario",
+                                    fontSize = 12.sp,
+                                    color = Color(0xFF4CAF50)
+                                )
+                                Text(
+                                    text = "${pedido.usuarioNombre} ${pedido.usuarioApellidos}",
+                                    fontSize = 14.sp,
+                                    color = Color(0xFF2E7D32),
+                                    fontWeight = FontWeight.Medium
+                                )
+                            }
+                        }
+                    }
+
+                    Spacer(modifier = Modifier.height(8.dp))
+
                     GoogleMap(
                         modifier = Modifier
                             .fillMaxWidth()
@@ -693,4 +730,3 @@ fun formatearFecha(timestamp: Long): String {
     val formatter = SimpleDateFormat("dd/MM HH:mm", Locale.getDefault())
     return formatter.format(date)
 }
-
