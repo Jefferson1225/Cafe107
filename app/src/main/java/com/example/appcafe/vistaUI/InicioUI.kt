@@ -37,7 +37,7 @@ import com.example.appcafe.viewmodel.ProductoViewModel
 import com.google.firebase.auth.FirebaseAuth
 import kotlinx.coroutines.launch
 import java.net.URLEncoder
-import java.nio.charset.StandardCharsets
+import java.nio.charset.StandardCharsets        
 
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable

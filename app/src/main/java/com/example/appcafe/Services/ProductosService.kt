@@ -15,4 +15,11 @@ class ProductosService {
             null
         }
     }
+
+    suspend fun actualizarProducto(producto: Producto) {
+        firestore.collection("productos")
+            .document(producto.id)
+            .set(producto)
+            .await()
+    }
 }

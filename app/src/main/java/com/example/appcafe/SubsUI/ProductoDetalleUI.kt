@@ -5,7 +5,10 @@ import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Delete
@@ -20,6 +23,7 @@ import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.input.KeyboardType
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.zIndex
@@ -28,7 +32,6 @@ import coil.compose.AsyncImage
 import coil.request.ImageRequest
 import com.example.appcafe.db.Producto
 import com.example.appcafe.Services.ProductosService
-
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.example.appcafe.Services.CarritoService
 import com.example.appcafe.db.ItemCarrito
@@ -50,6 +53,20 @@ fun ProductoDetalleUI(
     var showDeleteDialog by remember { mutableStateOf(false) }
     var showEditDialog by remember { mutableStateOf(false) }
 
+    // Variables para manejar Toast de manera segura
+    var toastMessage by remember { mutableStateOf<String?>(null) }
+    var toastError by remember { mutableStateOf<String?>(null) }
+
+    // Variables para el diálogo de edición
+    var editNombre by remember { mutableStateOf("") }
+    var editDescripcionCorta by remember { mutableStateOf("") }
+    var editDescripcionLarga by remember { mutableStateOf("") }
+    var editPrecio by remember { mutableStateOf("") }
+    var editCategoria by remember { mutableStateOf("") }
+    var editTamaños by remember { mutableStateOf("") }
+    var editImagenUrl by remember { mutableStateOf("") }
+    var editDisponible by remember { mutableStateOf(true) }
+
     val context = LocalContext.current
     val firebaseService = ProductosService()
     val productoViewModel: ProductoViewModel = viewModel()
@@ -65,6 +82,21 @@ fun ProductoDetalleUI(
     val auth = FirebaseAuth.getInstance()
     val carritoService = remember { CarritoService(firestore, auth) }
 
+    // Manejar mensajes de éxito
+    LaunchedEffect(toastMessage) {
+        toastMessage?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_SHORT).show()
+            toastMessage = null
+        }
+    }
+
+    // Manejar mensajes de error
+    LaunchedEffect(toastError) {
+        toastError?.let { message ->
+            Toast.makeText(context, message, Toast.LENGTH_LONG).show()
+            toastError = null
+        }
+    }
 
     // Cargar el producto por ID
     LaunchedEffect(productoId) {
@@ -73,9 +105,18 @@ fun ProductoDetalleUI(
             producto = firebaseService.getProductoPorId(productoId)
             producto?.let { prod ->
                 selectedSize = prod.tamaños.firstOrNull() ?: ""
+                // Inicializar valores para edición
+                editNombre = prod.nombre
+                editDescripcionCorta = prod.descripcionCorta
+                editDescripcionLarga = prod.descripcionLarga
+                editPrecio = prod.precio.toString()
+                editCategoria = prod.categoria
+                editTamaños = prod.tamaños.joinToString(", ")
+                editImagenUrl = prod.imagenUrl
+                editDisponible = prod.disponible
             }
         } catch (e: Exception) {
-            Toast.makeText(context, "Error al cargar producto", Toast.LENGTH_SHORT).show()
+            toastError = "Error al cargar producto"
         }
         isLoading = false
     }
@@ -83,16 +124,16 @@ fun ProductoDetalleUI(
     // Manejar operación exitosa (eliminación)
     LaunchedEffect(operacionExitosa) {
         if (operacionExitosa) {
-            Toast.makeText(context, "Producto eliminado exitosamente", Toast.LENGTH_SHORT).show()
+            toastMessage = "Producto eliminado exitosamente"
             productoViewModel.limpiarEstados()
             navController.popBackStack()
         }
     }
 
-    // Mostrar errores
+    // Mostrar errores del ViewModel
     LaunchedEffect(errorMessage) {
         errorMessage?.let { error ->
-            Toast.makeText(context, error, Toast.LENGTH_LONG).show()
+            toastError = error
             productoViewModel.limpiarEstados()
         }
     }
@@ -120,6 +161,154 @@ fun ProductoDetalleUI(
             },
             dismissButton = {
                 TextButton(onClick = { showDeleteDialog = false }) {
+                    Text("Cancelar")
+                }
+            }
+        )
+    }
+
+    // Diálogo de edición
+    if (showEditDialog) {
+        AlertDialog(
+            onDismissRequest = { showEditDialog = false },
+            title = { Text("Editar Producto") },
+            text = {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(500.dp)
+                        .verticalScroll(rememberScrollState())
+                ) {
+                    OutlinedTextField(
+                        value = editNombre,
+                        onValueChange = { editNombre = it },
+                        label = { Text("Nombre") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = editDescripcionCorta,
+                        onValueChange = { editDescripcionCorta = it },
+                        label = { Text("Descripción Corta") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        maxLines = 2
+                    )
+
+                    OutlinedTextField(
+                        value = editDescripcionLarga,
+                        onValueChange = { editDescripcionLarga = it },
+                        label = { Text("Descripción Larga") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        maxLines = 4
+                    )
+
+                    OutlinedTextField(
+                        value = editPrecio,
+                        onValueChange = { editPrecio = it },
+                        label = { Text("Precio") },
+                        keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = editCategoria,
+                        onValueChange = { editCategoria = it },
+                        label = { Text("Categoría") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = editTamaños,
+                        onValueChange = { editTamaños = it },
+                        label = { Text("Tamaños (separados por comas)") },
+                        placeholder = { Text("Pequeño, Mediano, Grande") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+
+                    OutlinedTextField(
+                        value = editImagenUrl,
+                        onValueChange = { editImagenUrl = it },
+                        label = { Text("URL de la Imagen") },
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp)
+                    )
+
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(bottom = 8.dp),
+                        verticalAlignment = Alignment.CenterVertically
+                    ) {
+                        Checkbox(
+                            checked = editDisponible,
+                            onCheckedChange = { editDisponible = it },
+                            colors = CheckboxDefaults.colors(
+                                checkedColor = Color(0xFF8B4513)
+                            )
+                        )
+                        Text(
+                            text = "Disponible",
+                            modifier = Modifier.padding(start = 8.dp)
+                        )
+                    }
+                }
+            },
+            confirmButton = {
+                TextButton(
+                    onClick = {
+                        val precioDouble = editPrecio.toDoubleOrNull()
+                        if (precioDouble != null && editNombre.isNotBlank() && editCategoria.isNotBlank()) {
+                            val tamañosList = editTamaños.split(",").map { it.trim() }.filter { it.isNotBlank() }
+
+                            val productoActualizado = producto!!.copy(
+                                nombre = editNombre,
+                                descripcionCorta = editDescripcionCorta,
+                                descripcionLarga = editDescripcionLarga,
+                                precio = precioDouble,
+                                categoria = editCategoria,
+                                tamaños = tamañosList,
+                                imagenUrl = editImagenUrl,
+                                disponible = editDisponible
+                            )
+
+                            scope.launch {
+                                try {
+                                    firebaseService.actualizarProducto(productoActualizado)
+                                    producto = productoActualizado
+                                    // Actualizar el selectedSize si ya no está disponible
+                                    if (!tamañosList.contains(selectedSize)) {
+                                        selectedSize = tamañosList.firstOrNull() ?: ""
+                                    }
+                                    toastMessage = "Producto actualizado exitosamente"
+                                    showEditDialog = false
+                                } catch (e: Exception) {
+                                    toastError = "Error al actualizar: ${e.message}"
+                                }
+                            }
+                        } else {
+                            toastError = "Por favor completa todos los campos requeridos"
+                        }
+                    },
+                    colors = ButtonDefaults.textButtonColors(contentColor = Color.Blue)
+                ) {
+                    Text("Guardar")
+                }
+            },
+            dismissButton = {
+                TextButton(onClick = { showEditDialog = false }) {
                     Text("Cancelar")
                 }
             }
@@ -344,13 +533,13 @@ fun ProductoDetalleUI(
                                     scope.launch {
                                         try {
                                             carritoService.agregarItem(item)
-                                            Toast.makeText(context, "Producto agregado al carrito", Toast.LENGTH_SHORT).show()
+                                            toastMessage = "Producto agregado al carrito"
                                         } catch (e: Exception) {
-                                            Toast.makeText(context, "Error al agregar al carrito: ${e.message}", Toast.LENGTH_LONG).show()
+                                            toastError = "Error al agregar al carrito: ${e.message}"
                                         }
                                     }
                                 } else {
-                                    Toast.makeText(context, "Usuario no autenticado", Toast.LENGTH_SHORT).show()
+                                    toastError = "Usuario no autenticado"
                                 }
                             },
                             colors = ButtonDefaults.buttonColors(containerColor = Color(0xFFD68C45)),
@@ -365,7 +554,6 @@ fun ProductoDetalleUI(
                                 fontWeight = FontWeight.Medium
                             )
                         }
-
                     }
 
                     Box(
@@ -407,11 +595,7 @@ fun ProductoDetalleUI(
 
                 // Botón de editar
                 IconButton(
-                    onClick = {
-                        // Aquí navegarías a tu pantalla de edición existente
-                        // navController.navigate("editar_producto/${currentProducto.id}")
-                        showEditDialog = true // o navegar a tu pantalla de edición
-                    },
+                    onClick = { showEditDialog = true },
                     modifier = Modifier
                         .background(
                             color = Color.Blue.copy(alpha = 0.9f),
